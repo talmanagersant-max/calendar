@@ -1,0 +1,43 @@
+{
+  "name": "osse-calendar",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "nx": "nx",
+    "start": "nx serve osse-calendar",
+    "build": "nx build osse-calendar",
+    "test": "nx test osse-calendar"
+  },
+  "dependencies": {
+    "@angular/animations": "17.3.12",
+    "@angular/common": "17.3.12",
+    "@angular/compiler": "17.3.12",
+    "@angular/core": "17.3.12",
+    "@angular/forms": "17.3.12",
+    "@angular/platform-browser": "17.3.12",
+    "@angular/platform-browser-dynamic": "17.3.12",
+    "@angular/router": "17.3.12",
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "ag-grid-angular": "^32.2.0",
+    "ag-grid-community": "^32.2.0",
+    "primeicons": "^7.0.0",
+    "primeng": "^17.18.15",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.14.10"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "17.3.12",
+    "@angular/cli": "17.3.12",
+    "@angular/compiler-cli": "17.3.12",
+    "@nx/angular": "18.2.0",
+    "@nx/workspace": "18.2.0",
+    "@types/node": "^22.10.2",
+    "autoprefixer": "^10.4.20",
+    "ng-packagr": "^17.3.0",
+    "nx": "18.2.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.4.5"
+  }
+}

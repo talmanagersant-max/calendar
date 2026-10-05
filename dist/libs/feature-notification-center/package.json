@@ -1,0 +1,7 @@
+{
+  "name": "feature-notification-center",
+  "version": "0.0.1",
+  "module": "./src/index.js",
+  "type": "module",
+  "main": "./src/index.js"
+}

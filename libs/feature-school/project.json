@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "feature-school",
+  "projectType": "library",
+  "sourceRoot": "libs/feature-school/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Skipping feature-school build; app resolves sources through tsconfig path aliases.'"
+      }
+    }
+  }
+}

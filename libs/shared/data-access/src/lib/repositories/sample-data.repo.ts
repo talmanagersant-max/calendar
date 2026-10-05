@@ -1,0 +1,850 @@
+import { Injectable } from '@angular/core';
+import { ICalendarSchedule } from '../interfaces/calendar.interface';
+import { ICalendarDetail, IDashboardMetric, INotificationItem } from '../interfaces/dashboard.interface';
+import { IComplianceItem } from '../interfaces/compliance.interface';
+import { ILea } from '../interfaces/lea.interface';
+import { ISchool, ISchoolGroup } from '../interfaces/school.interface';
+import { INotificationSummary } from '../interfaces/notification.interface';
+import {
+  ICompliancePillar,
+  IComplianceAlert,
+  IComplianceRateSummary,
+  IDashboardV2Header,
+  IDashboardV2StatTile,
+  IDotRoutingAlert,
+  IMissingCalendarRow,
+  IPendingApprovalRow,
+  IQuickAction
+} from '../interfaces/dashboard-v2.interface';
+import {
+  IApprovalQueueRow,
+  IBellSchedule,
+  IChangeRequest,
+  IComplianceRing,
+  IComplianceViolation,
+  IEarlyDismissalRow,
+  IEarlyDismissalSchedule,
+  IEsyCalendar,
+  IEsyOverlapWeek,
+  IHoliday,
+  IMarkingPeriod,
+  INonInstructionalDay,
+  INotificationFeedItem,
+  IOverlapMonthRow,
+  IProgram,
+  IReportLeaRow,
+  IRoutingConflict,
+  ITwelveMonthCalendar,
+  IWaiver
+} from '../interfaces/operations.interface';
+
+@Injectable({ providedIn: 'root' })
+export class SampleDataRepository {
+  readonly metrics: IDashboardMetric[] = [
+    { label: 'Active calendars', value: '148', change: '+12.4%', tone: 'positive' },
+    { label: 'Open approvals', value: '27', change: '+5', tone: 'warning' },
+    { label: 'School compliance', value: '96.1%', change: '+2.1%', tone: 'positive' },
+    { label: 'Pending waivers', value: '11', change: '-3', tone: 'neutral' }
+  ];
+
+  readonly notifications: INotificationItem[] = [
+    { id: 'n1', title: 'Bell schedule review', description: 'Cedar Grove requires a bell schedule update for the 2026 term.', type: 'warning', createdAt: '2h ago', read: false },
+    { id: 'n2', title: 'Compliance report ready', description: 'Annual compliance dashboard was refreshed and published.', type: 'info', createdAt: '5h ago', read: true },
+    { id: 'n3', title: 'Holiday closure approved', description: 'Amherst district holiday closure has received approval.', type: 'success', createdAt: '1d ago', read: true },
+    { id: 'n4', title: 'DOT routing issue', description: 'Three route assignments need review before dispatch.', type: 'urgent', createdAt: '1d ago', read: false }
+  ];
+
+  readonly leaList: ILea[] = [
+    {
+      id: 'lea-dcps',
+      code: 'DCPS',
+      name: 'DC Public Schools',
+      region: 'Districtwide',
+      type: 'Traditional',
+      schoolCount: 116,
+      submittedCount: 98,
+      approvedCount: 72,
+      contact: 'Sarah Kim',
+      email: 'sarah.kim@dcps.org',
+      deadline: 'Oct 1, 2025',
+      status: 'Partial'
+    },
+    {
+      id: 'lea-kipp',
+      code: 'KIPP',
+      name: 'KIPP DC',
+      region: 'Districtwide',
+      type: 'Charter',
+      schoolCount: 18,
+      submittedCount: 18,
+      approvedCount: 15,
+      contact: 'Marcus Brown',
+      email: 'marcus.brown@kippdc.org',
+      deadline: 'Oct 1, 2025',
+      status: 'Complete'
+    },
+    {
+      id: 'lea-achv',
+      code: 'ACHV',
+      name: 'Achievement Prep PCS',
+      region: 'Ward 8',
+      type: 'Charter',
+      schoolCount: 3,
+      submittedCount: 1,
+      approvedCount: 0,
+      contact: 'Diane Osei',
+      email: 'diane.osei@achievementprep.org',
+      deadline: 'Oct 1, 2025',
+      status: 'Incomplete'
+    },
+    {
+      id: 'lea-frnd',
+      code: 'FRND',
+      name: 'Friendship PCS',
+      region: 'Districtwide',
+      type: 'Charter',
+      schoolCount: 8,
+      submittedCount: 5,
+      approvedCount: 4,
+      contact: 'T. Washington',
+      email: 't.washington@friendshipschools.org',
+      deadline: 'Oct 1, 2025',
+      status: 'Partial'
+    },
+    {
+      id: 'lea-seed',
+      code: 'SEED',
+      name: 'SEED PCS',
+      region: 'Ward 7',
+      type: 'Charter',
+      schoolCount: 1,
+      submittedCount: 1,
+      approvedCount: 1,
+      contact: 'R. Allen',
+      email: 'r.allen@seedschooldc.org',
+      deadline: 'Oct 1, 2025',
+      status: 'Complete'
+    },
+    {
+      id: 'lea-capit',
+      code: 'CAPIT',
+      name: 'Capitol Hill Cluster',
+      region: 'Ward 6',
+      type: 'Traditional',
+      schoolCount: 4,
+      submittedCount: 3,
+      approvedCount: 2,
+      contact: 'L. Morales',
+      email: 'l.morales@dcps.org',
+      deadline: 'Oct 1, 2025',
+      status: 'Partial'
+    }
+  ];
+
+  // Most schools have exactly one Site (schoolGroupId left unset). Malcolm X ES is the one
+  // multi-site example, grouped under schoolGroups below, to exercise the School -> Site
+  // hierarchy and the "apply to all sites in the same school" wizard feature.
+  readonly schoolGroups: ISchoolGroup[] = [{ id: 'sg-mlx', code: '512', name: 'Malcolm X ES', leaId: 'lea-dcps' }];
+
+  readonly schoolList: ISchool[] = [
+    {
+      id: 'sch-mlx',
+      code: 'MLX-ES-01',
+      name: 'Malcolm X ES - Main Campus',
+      leaId: 'lea-dcps',
+      schoolGroupId: 'sg-mlx',
+      gradeBand: 'PK-5',
+      programs: ['SPED', 'ESY'],
+      bellSchedule: 'Standard ES',
+      calendarCount: 2,
+      studentCount: 480,
+      city: 'Washington',
+      status: 'Open'
+    },
+    {
+      id: 'sch-mlx-annex',
+      code: 'MLX-ES-02',
+      name: 'Malcolm X ES - South Annex',
+      leaId: 'lea-dcps',
+      schoolGroupId: 'sg-mlx',
+      // A real non-reportable satellite site: doesn't automatically require its own Regular
+      // calendar, but it does carry real enrollment, so it should still surface as needing one.
+      reportable: false,
+      gradeBand: 'PK-5',
+      programs: ['SPED'],
+      bellSchedule: 'Standard ES',
+      calendarCount: 0,
+      studentCount: 140,
+      city: 'Washington',
+      status: 'Open'
+    },
+    {
+      id: 'sch-ana',
+      code: 'ANA-HS',
+      name: 'Anacostia HS',
+      leaId: 'lea-dcps',
+      gradeBand: '9-12',
+      programs: ['SPED', '12-Month'],
+      bellSchedule: 'Standard HS',
+      calendarCount: 3,
+      studentCount: 610,
+      city: 'Washington',
+      status: 'Open'
+    },
+    {
+      id: 'sch-elh',
+      code: 'ELH-MS',
+      name: 'Eliot-Hine MS',
+      leaId: 'lea-dcps',
+      gradeBand: '6-8',
+      programs: ['SPED'],
+      bellSchedule: 'Standard MS',
+      calendarCount: 2,
+      studentCount: 340,
+      city: 'Washington',
+      status: 'Operational'
+    },
+    {
+      id: 'sch-kpp',
+      code: 'KPP-PCS',
+      name: 'KIPP DC Lead',
+      leaId: 'lea-kipp',
+      gradeBand: '5-8',
+      programs: ['ESY', 'SPED'],
+      bellSchedule: 'Extended Day',
+      calendarCount: 3,
+      studentCount: 410,
+      city: 'Washington',
+      status: 'Open'
+    },
+    {
+      id: 'sch-ach',
+      code: 'ACH-PCS',
+      name: 'Achievement Prep Upper',
+      leaId: 'lea-achv',
+      gradeBand: '6-8',
+      programs: ['SPED', 'ESY'],
+      bellSchedule: 'Extended Day',
+      calendarCount: 2,
+      studentCount: 260,
+      city: 'Washington',
+      status: 'Review'
+    },
+    {
+      id: 'sch-sed',
+      code: 'SED-PCS',
+      name: 'SEED PCS',
+      leaId: 'lea-seed',
+      gradeBand: '6-12',
+      programs: ['12-Month', 'SPED'],
+      bellSchedule: 'Boarding',
+      calendarCount: 4,
+      studentCount: 340,
+      city: 'Washington',
+      status: 'Open'
+    },
+    {
+      id: 'sch-brk',
+      code: 'BRK-MS',
+      name: 'Brookland MS',
+      leaId: 'lea-dcps',
+      gradeBand: '6-8',
+      programs: ['SPED'],
+      bellSchedule: 'Standard MS',
+      calendarCount: 1,
+      studentCount: 305,
+      city: 'Washington',
+      status: 'Open'
+    },
+    {
+      id: 'sch-hdy',
+      code: 'HDY-MS',
+      name: 'Hardy MS',
+      leaId: 'lea-dcps',
+      gradeBand: '6-8',
+      programs: ['SPED', 'ESY'],
+      bellSchedule: 'Standard MS',
+      calendarCount: 1,
+      studentCount: 290,
+      city: 'Washington',
+      status: 'Open'
+    },
+    {
+      id: 'sch-wil',
+      code: 'WIL-HS',
+      name: 'Wilson HS',
+      leaId: 'lea-dcps',
+      gradeBand: '9-12',
+      programs: ['SPED', '12-Month'],
+      bellSchedule: 'Standard HS',
+      calendarCount: 1,
+      studentCount: 1850,
+      city: 'Washington',
+      status: 'Open'
+    }
+  ];
+
+  readonly calendars: ICalendarSchedule[] = [
+    {
+      id: 'CAL-2025-0412',
+      name: 'SY 2025-26 Standard Calendar',
+      schoolName: 'Brookland MS',
+      leaName: 'DCPS',
+      leaId: 'lea-dcps',
+      siteId: 'sch-brk',
+      programId: null,
+      parentCalendarId: 'CAL-2025-LEA-DCPS',
+      visibility: 'Public',
+      cycle: 'SY 2025-26',
+      type: 'SY 2025-26',
+      days: 180,
+      hours: 1102,
+      compliancePercent: 100,
+      status: 'Approved',
+      submittedDate: 'Sep 10',
+      lastUpdated: '2025-09-10'
+    },
+    {
+      id: 'CAL-2025-0398',
+      name: 'ESY 2025 Calendar',
+      schoolName: 'Hardy MS',
+      leaName: 'DCPS',
+      leaId: 'lea-dcps',
+      siteId: 'sch-hdy',
+      programId: 'prog-esy-2025',
+      parentCalendarId: null,
+      visibility: 'Public',
+      cycle: 'ESY 2025',
+      type: 'ESY 2025',
+      days: 30,
+      hours: 240,
+      compliancePercent: 87,
+      status: 'Under Review',
+      submittedDate: 'Sep 8',
+      lastUpdated: '2025-09-08'
+    },
+    {
+      id: 'CAL-2025-0401',
+      name: 'SY 2025-26 Standard Calendar',
+      schoolName: 'Wilson HS',
+      leaName: 'DCPS',
+      leaId: 'lea-dcps',
+      siteId: 'sch-wil',
+      programId: null,
+      parentCalendarId: 'CAL-2025-LEA-DCPS',
+      visibility: 'Public',
+      cycle: 'SY 2025-26',
+      type: 'SY 2025-26',
+      days: 181,
+      hours: 1120,
+      compliancePercent: 95,
+      status: 'Under Review',
+      submittedDate: 'Sep 9',
+      lastUpdated: '2025-09-09'
+    },
+    {
+      id: 'CAL-2025-0385',
+      name: 'SY 2025-26 Standard Calendar',
+      schoolName: 'KIPP DC Lead',
+      leaName: 'KIPP DC',
+      leaId: 'lea-kipp',
+      siteId: 'sch-kpp',
+      programId: null,
+      parentCalendarId: null,
+      visibility: 'Public',
+      cycle: 'SY 2025-26',
+      type: 'SY 2025-26',
+      days: 185,
+      hours: 1190,
+      compliancePercent: 100,
+      status: 'Approved',
+      submittedDate: 'Sep 5',
+      lastUpdated: '2025-09-05'
+    },
+    {
+      id: 'CAL-2025-0391',
+      name: 'SY 2025-26 Standard Calendar',
+      schoolName: 'Achievement Prep Upper',
+      leaName: 'Achievement Prep',
+      leaId: 'lea-achv',
+      siteId: 'sch-ach',
+      programId: null,
+      parentCalendarId: null,
+      visibility: 'Public',
+      cycle: 'SY 2025-26',
+      type: 'SY 2025-26',
+      days: 178,
+      hours: 1040,
+      compliancePercent: 64,
+      status: 'Rejected',
+      submittedDate: 'Sep 7',
+      lastUpdated: '2025-09-07'
+    },
+    {
+      id: 'CAL-2025-0405',
+      name: '12-Month Calendar',
+      schoolName: 'Anacostia HS',
+      leaName: 'DCPS',
+      leaId: 'lea-dcps',
+      siteId: 'sch-ana',
+      programId: 'prog-12month-2025',
+      parentCalendarId: null,
+      visibility: 'Non-public',
+      cycle: '12-Month',
+      type: '12-Month',
+      days: 240,
+      hours: 1480,
+      compliancePercent: 72,
+      status: 'Draft',
+      submittedDate: null,
+      lastUpdated: '2025-09-01'
+    },
+    {
+      id: 'CAL-2025-0377',
+      name: 'SY 2025-26 Standard Calendar',
+      schoolName: 'SEED PCS',
+      leaName: 'SEED PCS',
+      leaId: 'lea-seed',
+      siteId: 'sch-sed',
+      programId: null,
+      parentCalendarId: null,
+      visibility: 'Public',
+      cycle: 'SY 2025-26',
+      type: 'SY 2025-26',
+      days: 180,
+      hours: 1100,
+      compliancePercent: 100,
+      status: 'Approved',
+      submittedDate: 'Sep 3',
+      lastUpdated: '2025-09-03'
+    },
+    {
+      id: 'CAL-2025-0421',
+      name: 'SY 2025-26 Standard Calendar',
+      schoolName: 'Eliot-Hine MS',
+      leaName: 'DCPS',
+      leaId: 'lea-dcps',
+      siteId: 'sch-elh',
+      programId: null,
+      parentCalendarId: 'CAL-2025-LEA-DCPS',
+      visibility: 'Public',
+      cycle: 'SY 2025-26',
+      type: 'SY 2025-26',
+      days: null,
+      hours: null,
+      compliancePercent: null,
+      status: 'Missing',
+      submittedDate: null,
+      lastUpdated: '2025-09-01'
+    },
+    {
+      id: 'CAL-2025-LEA-DCPS',
+      name: 'DCPS District Calendar (SY 2025-26)',
+      schoolName: 'All DCPS Sites',
+      leaName: 'DCPS',
+      leaId: 'lea-dcps',
+      siteId: null,
+      programId: null,
+      parentCalendarId: null,
+      visibility: 'Public',
+      cycle: 'SY 2025-26',
+      type: 'SY 2025-26',
+      days: 180,
+      hours: 1110,
+      compliancePercent: 100,
+      status: 'Approved',
+      submittedDate: 'Aug 15',
+      lastUpdated: '2025-08-15'
+    },
+    {
+      id: 'CAL-2025-GRD-001',
+      name: 'PK-2 Alternate Calendar',
+      schoolName: 'Malcolm X ES - Main Campus',
+      leaName: 'DCPS',
+      leaId: 'lea-dcps',
+      siteId: 'sch-mlx',
+      grade: 'PK-2',
+      programId: null,
+      parentCalendarId: null,
+      visibility: 'Public',
+      cycle: 'SY 2025-26',
+      type: 'Alternate Calendar',
+      days: 180,
+      hours: 1080,
+      compliancePercent: 100,
+      status: 'Approved',
+      submittedDate: 'Sep 12',
+      lastUpdated: '2025-09-12'
+    },
+    {
+      id: 'CAL-2025-GRD-002',
+      name: '9-12 ESY Calendar',
+      schoolName: 'Anacostia HS',
+      leaName: 'DCPS',
+      leaId: 'lea-dcps',
+      siteId: 'sch-ana',
+      grade: '9-12',
+      programId: 'prog-esy-2025',
+      parentCalendarId: null,
+      visibility: 'Public',
+      cycle: 'ESY 2025',
+      type: 'ESY Calendar',
+      days: 28,
+      hours: 224,
+      compliancePercent: 82,
+      status: 'Under Review',
+      submittedDate: 'Sep 13',
+      lastUpdated: '2025-09-13'
+    }
+  ];
+
+  readonly calendarDetails: Record<string, ICalendarDetail> = {
+    'cal-4001': {
+      id: 'cal-4001',
+      name: '2026-2027 Standard Calendar',
+      cycle: 'A/B Rotation',
+      totalDays: 180,
+      days: [
+        { day: 1, label: 'Aug 12', status: 'instruction' },
+        { day: 2, label: 'Aug 13', status: 'instruction' },
+        { day: 3, label: 'Aug 14', status: 'pd' },
+        { day: 4, label: 'Aug 15', status: 'dismissal' },
+        { day: 5, label: 'Aug 16', status: 'instruction' },
+        { day: 6, label: 'Aug 17', status: 'holiday' },
+        { day: 7, label: 'Aug 18', status: 'esy' }
+      ],
+      staffNotes: 'Professional development and campus closure windows aligned to site staffing.'
+    }
+  };
+
+  readonly complianceItems: IComplianceItem[] = [
+    { id: 'cmp-1', title: 'Annual risk review', owner: 'Compliance Office', dueDate: '2026-09-20', status: 'On Track' },
+    { id: 'cmp-2', title: 'TRI training deadline', owner: 'Operations', dueDate: '2026-09-18', status: 'At Risk' },
+    { id: 'cmp-3', title: 'Renewal packet review', owner: 'School Leadership', dueDate: '2026-09-16', status: 'Past Due' }
+  ];
+
+  readonly notificationsFeed: INotificationSummary[] = [
+    { id: 'n-1', title: 'Calendar sync warning', body: 'The last sync created a duplicate Bell schedule entry.', priority: 'High', receivedAt: '2026-09-15T08:00:00', category: 'Calendar' },
+    { id: 'n-2', title: 'Waiver status update', body: 'M. Lewis waiver was resubmitted and sent to review.', priority: 'Medium', receivedAt: '2026-09-14T13:30:00', category: 'Approval' },
+    { id: 'n-3', title: 'Compliance follow-up', body: 'Five schools require signed attendance checklists.', priority: 'Low', receivedAt: '2026-09-13T18:20:00', category: 'Compliance' }
+  ];
+
+  readonly dashboardV2Header: IDashboardV2Header = {
+    schoolYear: 'SY 2025-26',
+    schoolYearStatus: 'School Year Active',
+    missingCalendarsCount: 38,
+    routingConflictsCount: 3,
+    unreadNotifications: 3,
+    todayLabel: 'Sep 16, 2025'
+  };
+
+  readonly dashboardV2StatTiles: IDashboardV2StatTile[] = [
+    { label: 'Total Calendars', value: '342', caption: 'SY 2025-26', icon: 'fa-solid fa-calendar-days', tone: 'neutral' },
+    { label: 'Approved', value: '201', caption: '+12 this week', icon: 'fa-solid fa-circle-check', tone: 'positive' },
+    { label: 'Pending Review', value: '47', caption: 'Avg 3.2 days', icon: 'fa-solid fa-hourglass-half', tone: 'neutral' },
+    { label: 'Missing', value: '38', caption: '↑ 4 since last week', icon: 'fa-solid fa-triangle-exclamation', tone: 'warning' },
+    { label: 'LEAs', value: '72', caption: 'Active', icon: 'fa-solid fa-building-columns', tone: 'neutral' },
+    { label: 'Schools', value: '219', caption: 'Enrolled', icon: 'fa-solid fa-school', tone: 'neutral' }
+  ];
+
+  readonly compliancePillars: ICompliancePillar[] = [
+    { label: 'Calendars Submitted', current: 201, total: 342, tone: 'primary' },
+    { label: 'Calendars Approved', current: 168, total: 342, tone: 'success' },
+    { label: 'Missing / Overdue', current: 38, total: 342, tone: 'danger' },
+    { label: 'Below 180-Day Threshold', current: 14, total: 342, tone: 'warning' }
+  ];
+
+  readonly complianceRateSummary: IComplianceRateSummary[] = [
+    { label: 'Submission Rate', value: '59%', tone: 'success' },
+    { label: 'Approval Rate', value: '49%', tone: 'primary' },
+    { label: 'At Risk', value: '11%', tone: 'danger' }
+  ];
+
+  readonly quickActions: IQuickAction[] = [
+    { label: 'Review Pending Calendars', count: 47, icon: 'fa-solid fa-clipboard-check', highlighted: false },
+    { label: 'Send Deadline Reminders', count: 38, icon: 'fa-solid fa-paper-plane', highlighted: true },
+    { label: 'Approve ESY Calendars', count: 9, icon: 'fa-solid fa-sun', highlighted: false },
+    { label: 'Process Waivers', count: 5, icon: 'fa-solid fa-file-signature', highlighted: false },
+    { label: 'Run Compliance Report', count: null, icon: 'fa-solid fa-chart-line', highlighted: false },
+    { label: 'Upload Holiday Template', count: null, icon: 'fa-solid fa-file-arrow-up', highlighted: false }
+  ];
+
+  readonly complianceAlerts: IComplianceAlert[] = [
+    { id: 'alert-1', severity: 'critical', message: '14 schools below 180-day threshold — review required before Oct 15.', actionLabel: 'View' },
+    { id: 'alert-2', severity: 'critical', message: '3 ESY calendars missing required 1080-hour documentation.', actionLabel: 'View' },
+    { id: 'alert-3', severity: 'warning', message: 'Waiver deadline: submit makeup day waivers by Nov 1, 2025.', actionLabel: 'Submit' }
+  ];
+
+  readonly missingCalendars: IMissingCalendarRow[] = [
+    { id: 'mc-1', lea: 'DC Public Schools', school: 'Malcolm X ES', type: 'SY 2025-26', dueDate: 'Oct 1, 2025', status: 'Missing' },
+    { id: 'mc-2', lea: 'DC Public Schools', school: 'Anacostia HS', type: 'ESY 2025', dueDate: 'Sep 15, 2025', status: 'Overdue' },
+    { id: 'mc-3', lea: 'Achievement Prep', school: 'Achievement Prep PCS', type: 'SY 2025-26', dueDate: 'Oct 1, 2025', status: 'Draft' },
+    { id: 'mc-4', lea: 'Friendship PCS', school: 'Friendship Tech Prep', type: '12-Month', dueDate: 'Sep 20, 2025', status: 'Missing' }
+  ];
+
+  readonly pendingApprovals: IPendingApprovalRow[] = [
+    { id: 'CAL-2025-0412', school: 'Brookland MS', type: 'SY 2025-26', submittedDate: 'Sep 10, 2025', reviewer: 'J. Torres' },
+    { id: 'CAL-2025-0398', school: 'Hardy MS', type: 'ESY 2025', submittedDate: 'Sep 8, 2025', reviewer: 'M. Park' },
+    { id: 'CAL-2025-0401', school: 'Wilson HS', type: 'SY 2025-26', submittedDate: 'Sep 9, 2025', reviewer: 'J. Torres' }
+  ];
+
+  readonly dotRoutingAlerts: IDotRoutingAlert[] = [
+    { id: 'dot-1', school: 'Eliot-Hine MS', description: 'Early dismissal Fridays conflicts with routing plan', severity: 'High' },
+    { id: 'dot-2', school: 'Cardozo EC', description: 'Non-instructional Oct 13 not reflected in DDOT schedule', severity: 'Medium' },
+    { id: 'dot-3', school: 'Wheatley ES', description: 'Bell schedule change requires routing update', severity: 'Low' }
+  ];
+
+  readonly bellSchedules: IBellSchedule[] = [
+    { id: 'BS-001', name: 'Standard ES', level: 'Elementary', start: '7:45 AM', end: '3:15 PM', totalMinutes: 390, instrMinutes: 345, schoolsUsing: 42 },
+    { id: 'BS-002', name: 'Standard MS', level: 'Middle School', start: '8:20 AM', end: '3:20 PM', totalMinutes: 360, instrMinutes: 315, schoolsUsing: 28 },
+    { id: 'BS-003', name: 'Standard HS', level: 'High School', start: '8:45 AM', end: '3:45 PM', totalMinutes: 360, instrMinutes: 330, schoolsUsing: 31 },
+    { id: 'BS-004', name: 'Extended Day', level: 'All', start: '7:30 AM', end: '4:30 PM', totalMinutes: 480, instrMinutes: 430, schoolsUsing: 15 },
+    { id: 'BS-005', name: 'Early Dismissal Variant', level: 'All', start: '7:45 AM', end: '1:00 PM', totalMinutes: 195, instrMinutes: 165, schoolsUsing: 8 }
+  ];
+
+  readonly holidays: IHoliday[] = [
+    { id: 'hol-1', name: 'Labor Day', dates: 'Sep 1, 2025', type: 'Federal', appliesTo: 'All Schools' },
+    { id: 'hol-2', name: 'Columbus / Indigenous Peoples Day', dates: 'Oct 13, 2025', type: 'Federal', appliesTo: 'All Schools' },
+    { id: 'hol-3', name: 'Veterans Day', dates: 'Nov 11, 2025', type: 'Federal', appliesTo: 'All Schools' },
+    { id: 'hol-4', name: 'Thanksgiving Break', dates: 'Nov 27-28, 2025', type: 'Local', appliesTo: 'All Schools' },
+    { id: 'hol-5', name: 'Winter Break', dates: 'Dec 22, 2025 - Jan 2, 2026', type: 'Local', appliesTo: 'All Schools' },
+    { id: 'hol-6', name: 'MLK Jr. Day', dates: 'Jan 19, 2026', type: 'Federal', appliesTo: 'All Schools' },
+    { id: 'hol-7', name: 'Presidents Day', dates: 'Feb 16, 2026', type: 'Federal', appliesTo: 'All Schools' },
+    { id: 'hol-8', name: 'Spring Break', dates: 'Apr 13-17, 2026', type: 'Local', appliesTo: 'All Schools' },
+    { id: 'hol-9', name: 'Memorial Day', dates: 'May 25, 2026', type: 'Federal', appliesTo: 'All Schools' },
+    { id: 'hol-10', name: 'Juneteenth', dates: 'Jun 19, 2026', type: 'Federal', appliesTo: 'All Schools' }
+  ];
+
+  readonly programs: IProgram[] = [
+    { id: 'prog-esy-2025', leaId: 'lea-dcps', name: 'Extended School Year 2025', type: 'ESY', eligibility: 'IEP-eligible students, per individual determination' },
+    { id: 'prog-12month-2025', leaId: 'lea-dcps', name: '12-Month Calendar 2025-26', type: '12-Month', eligibility: 'Sites electing a year-round instructional calendar' },
+    { id: 'prog-alt-credit', leaId: 'lea-dcps', name: 'Alternative Credit Recovery', type: 'Alternative', eligibility: 'Students referred by a site counselor for credit recovery' }
+  ];
+
+  readonly markingPeriods: IMarkingPeriod[] = [
+    { id: 'mp-2025-s1', calendarId: 'CAL-2025-LEA-DCPS', name: 'Semester 1', type: 'Semester', startDate: '2025-09-02', endDate: '2026-01-23' },
+    { id: 'mp-2025-s2', calendarId: 'CAL-2025-LEA-DCPS', name: 'Semester 2', type: 'Semester', startDate: '2026-01-26', endDate: '2026-06-19' },
+    { id: 'mp-2025-q1', calendarId: 'CAL-2025-LEA-DCPS', name: 'Quarter 1', type: 'Quarter', startDate: '2025-09-02', endDate: '2025-11-07' },
+    { id: 'mp-2025-q2', calendarId: 'CAL-2025-LEA-DCPS', name: 'Quarter 2', type: 'Quarter', startDate: '2025-11-10', endDate: '2026-01-23' },
+    { id: 'mp-2025-q3', calendarId: 'CAL-2025-LEA-DCPS', name: 'Quarter 3', type: 'Quarter', startDate: '2026-01-26', endDate: '2026-03-27' },
+    { id: 'mp-2025-q4', calendarId: 'CAL-2025-LEA-DCPS', name: 'Quarter 4', type: 'Quarter', startDate: '2026-03-30', endDate: '2026-06-19' },
+    { id: 'mp-2025-kipp-s1', calendarId: 'CAL-2025-0385', name: 'Semester 1', type: 'Semester', startDate: '2025-09-02', endDate: '2026-01-23' },
+    { id: 'mp-2025-kipp-s2', calendarId: 'CAL-2025-0385', name: 'Semester 2', type: 'Semester', startDate: '2026-01-26', endDate: '2026-06-19' }
+  ];
+
+  readonly esyCalendars: IEsyCalendar[] = [
+    { id: 'ESY-2025-001', school: 'Malcolm X ES', lea: 'DCPS', dates: 'Jul 7 - Aug 15', days: 30, hours: 240, targetHours: 1080, syHours: 840, status: 'Approved' },
+    { id: 'ESY-2025-002', school: 'Anacostia HS', lea: 'DCPS', dates: 'Jul 7 - Aug 15', days: 30, hours: 240, targetHours: 1080, syHours: 840, status: 'Under Review' },
+    { id: 'ESY-2025-003', school: 'KIPP DC Lead', lea: 'KIPP DC', dates: 'Jun 30 - Aug 8', days: 30, hours: 235, targetHours: 1080, syHours: 840, status: 'Approved' },
+    { id: 'ESY-2025-004', school: 'Achievement Prep', lea: 'Achievement Prep', dates: 'Jul 14 - Aug 22', days: 28, hours: 220, targetHours: 1080, syHours: 0, status: 'Missing' }
+  ];
+
+  readonly esyOverlapWeeks: IEsyOverlapWeek[] = [
+    { week: 'Jun 30-Jul 4', leas: { DCPS: false, 'KIPP DC': true, 'Achievement Prep': false } },
+    { week: 'Jul 7-11', leas: { DCPS: true, 'KIPP DC': true, 'Achievement Prep': false } },
+    { week: 'Jul 14-18', leas: { DCPS: true, 'KIPP DC': true, 'Achievement Prep': true } },
+    { week: 'Jul 21-25', leas: { DCPS: true, 'KIPP DC': true, 'Achievement Prep': true } },
+    { week: 'Jul 28-Aug 1', leas: { DCPS: true, 'KIPP DC': true, 'Achievement Prep': true } },
+    { week: 'Aug 4-8', leas: { DCPS: true, 'KIPP DC': true, 'Achievement Prep': true } },
+    { week: 'Aug 11-15', leas: { DCPS: true, 'KIPP DC': false, 'Achievement Prep': true } },
+    { week: 'Aug 18-22', leas: { DCPS: false, 'KIPP DC': false, 'Achievement Prep': true } }
+  ];
+
+  readonly twelveMonthCalendars: ITwelveMonthCalendar[] = [
+    { id: '12M-2025-001', school: 'Anacostia HS', lea: 'DCPS', start: 'Jul 1, 2025', end: 'Jun 30, 2026', days: 240, totalHours: 1480, status: 'Approved' },
+    { id: '12M-2025-002', school: 'SEED PCS', lea: 'SEED PCS', start: 'Jul 7, 2025', end: 'Jun 26, 2026', days: 238, totalHours: 1450, status: 'Approved' },
+    { id: '12M-2025-003', school: 'Friendship Tech Prep', lea: 'Friendship PCS', start: 'Jul 7, 2025', end: 'Jun 26, 2026', days: 235, totalHours: 1430, status: 'Under Review' },
+    { id: '12M-2025-004', school: 'KIPP DC BOLD', lea: 'KIPP DC', start: 'Jul 1, 2025', end: 'Jun 30, 2026', days: 237, totalHours: 1440, status: 'Draft' }
+  ];
+
+  readonly twelveMonthOverlapRows: IOverlapMonthRow[] = [
+    { school: 'Anacostia', color: '#1447e6', active: true },
+    { school: 'SEED', color: '#16a34a', active: true },
+    { school: 'Friendship', color: '#a855f7', active: false },
+    { school: 'KIPP', color: '#d97706', active: true }
+  ];
+
+  readonly complianceRings: IComplianceRing[] = [
+    {
+      label: '180-Day Compliance',
+      subtitle: 'SY 2025-26 · 219 schools',
+      current: 178,
+      total: 219,
+      percentLabel: '81.3% of schools meet the 180-day requirement',
+      ringColor: '#16a34a',
+      buckets: [
+        { label: '≥ 180 days', count: 178, tone: 'success' },
+        { label: '175-179 days', count: 14, tone: 'warning' },
+        { label: '< 175 days', count: 27, tone: 'danger' }
+      ]
+    },
+    {
+      label: '1080-Hour Compliance',
+      subtitle: 'SY + ESY combined',
+      current: 192,
+      total: 219,
+      percentLabel: '87.7% of schools meet the 1080-hour requirement',
+      ringColor: '#1447e6',
+      buckets: [
+        { label: '≥ 1080 hours', count: 192, tone: 'success' },
+        { label: '1000-1079 hours', count: 18, tone: 'warning' },
+        { label: '< 1000 hours', count: 9, tone: 'danger' }
+      ]
+    }
+  ];
+
+  readonly earlyDismissalImpact: IEarlyDismissalRow[] = [
+    { school: 'Brookland MS', days: 8, minutesImpact: -53, flag: 'Compliant' },
+    { school: 'Wilson HS', days: 12, minutesImpact: -80, flag: 'Compliant' },
+    { school: 'Cardozo EC', days: 23, minutesImpact: -153, flag: 'Violation' },
+    { school: 'Hardy MS', days: 6, minutesImpact: -40, flag: 'Compliant' }
+  ];
+
+  readonly complianceViolations: IComplianceViolation[] = [
+    { school: 'Achievement Prep Upper', issue: 'Below 180-day threshold', days: '178', severity: 'High', status: 'Open' },
+    { school: 'Eliot-Hine MS', issue: 'Missing calendar — 0 days submitted', days: '—', severity: 'Critical', status: 'Open' },
+    { school: 'Anacostia HS ESY', issue: 'ESY hours not reaching 1080 threshold', days: '30', severity: 'Medium', status: 'Waiver Pending' },
+    { school: 'Cardozo EC', issue: 'Excessive early dismissals: 23 days (max 20)', days: '181', severity: 'High', status: 'Open' },
+    { school: 'Roosevelt HS', issue: 'PD days exceed 10-day limit: 12 days', days: '180', severity: 'Medium', status: 'Resolved' }
+  ];
+
+  readonly waivers: IWaiver[] = [
+    { id: 'WAV-2025-001', school: 'Anacostia HS', lea: 'DCPS', type: 'ESY Hours', submitted: 'Sep 5, 2025', reviewer: 'J. Torres', status: 'Approved', resolved: 'Sep 10, 2025' },
+    { id: 'WAV-2025-002', school: 'Cardozo EC', lea: 'DCPS', type: 'Early Dismissal', submitted: 'Sep 8, 2025', reviewer: 'M. Park', status: 'Under Review', resolved: null },
+    { id: 'WAV-2025-003', school: 'Achievement Prep Upper', lea: 'Achievement Prep', type: '180-Day', submitted: 'Sep 12, 2025', reviewer: 'Unassigned', status: 'Pending', resolved: null },
+    { id: 'WAV-2025-004', school: 'Roosevelt HS', lea: 'DCPS', type: 'PD Days Limit', submitted: 'Sep 2, 2025', reviewer: 'J. Torres', status: 'Approved', resolved: 'Sep 9, 2025' }
+  ];
+
+  readonly approvalQueue: IApprovalQueueRow[] = [
+    { id: 'CAL-2025-0398', school: 'Hardy MS', lea: 'DCPS', type: 'ESY 2025', days: 30, hours: 240, compliancePercent: 87, submitted: 'Sep 8', assigned: 'M. Park', priority: 'High' },
+    { id: 'CAL-2025-0401', school: 'Wilson HS', lea: 'DCPS', type: 'SY 2025-26', days: 181, hours: 1120, compliancePercent: 95, submitted: 'Sep 9', assigned: 'J. Torres', priority: 'Normal' },
+    { id: 'CAL-2025-0403', school: 'KIPP DC BOLD', lea: 'KIPP DC', type: 'SY 2025-26', days: 184, hours: 1160, compliancePercent: 99, submitted: 'Sep 9', assigned: 'M. Park', priority: 'Normal' },
+    { id: 'CAL-2025-0410', school: 'Friendship Collegiate', lea: 'Friendship PCS', type: '12-Month', days: 237, hours: 1440, compliancePercent: 91, submitted: 'Sep 11', assigned: 'Unassigned', priority: 'Low' }
+  ];
+
+  readonly changeRequests: IChangeRequest[] = [
+    { id: 'CR-2025-012', calendarId: 'CAL-2025-0350', school: 'Anacostia HS', changeType: 'Add PD Day', requested: 'Sep 10', status: 'Pending' },
+    { id: 'CR-2025-013', calendarId: 'CAL-2025-0362', school: 'Roosevelt HS', changeType: 'Update Bell Schedule', requested: 'Sep 11', status: 'Under Review' },
+    { id: 'CR-2025-014', calendarId: 'CAL-2025-0371', school: 'Hardy MS', changeType: 'Remove Holiday', requested: 'Sep 12', status: 'Approved' }
+  ];
+
+  readonly routingConflicts: IRoutingConflict[] = [
+    { school: 'Eliot-Hine MS', issue: 'Early dismissal Fridays (1:00 PM) conflicts with DDOT Route #42', routes: 'R-042, R-043', severity: 'High', status: 'Open' },
+    { school: 'Cardozo EC', issue: 'Non-instructional Oct 13 not reflected in DDOT routing plan', routes: 'R-017', severity: 'Medium', status: 'Open' },
+    { school: 'Wheatley ES', issue: 'Bell schedule change from 7:45 AM to 8:15 AM — routing update required', routes: 'R-028, R-029', severity: 'High', status: 'In Progress' },
+    { school: 'Dunbar HS', issue: 'Early release Dec 19 conflicts with sporting event routing on R-055', routes: 'R-055', severity: 'Low', status: 'Resolved' }
+  ];
+
+  readonly upcomingDismissals: IEarlyDismissalSchedule[] = [
+    { school: 'Brookland MS', date: 'Oct 31, 2025', dismissTime: '1:00 PM', routes: 4, notified: true },
+    { school: 'Wilson HS', date: 'Dec 19, 2025', dismissTime: '12:00 PM', routes: 6, notified: true },
+    { school: 'Eliot-Hine MS', date: 'Every Friday', dismissTime: '1:00 PM', routes: 2, notified: false },
+    { school: 'Cardozo EC', date: 'Nov 14, 2025', dismissTime: '1:30 PM', routes: 3, notified: false }
+  ];
+
+  readonly nonInstructionalDays: INonInstructionalDay[] = [
+    { schools: 'All DCPS', date: 'Sep 29, 2025', type: 'PD Day', routes: 'All', status: 'Notified' },
+    { schools: 'All DCPS', date: 'Oct 13, 2025', type: 'Holiday', routes: 'All', status: 'Notified' },
+    { schools: 'All DCPS', date: 'Oct 14, 2025', type: 'PD Day', routes: 'All', status: 'Pending' },
+    { schools: 'KIPP DC', date: 'Oct 3, 2025', type: 'LEA Holiday', routes: 'R-012-R-018', status: 'Notified' }
+  ];
+
+  readonly notificationFeed: INotificationFeedItem[] = [
+    {
+      id: 'nf-1',
+      icon: 'fa-clock',
+      iconTone: 'bg-amber-100 text-amber-700',
+      title: 'Calendar Submission Deadline in 15 days',
+      description: '38 schools have not yet submitted SY 2025-26 calendars. Deadline: Oct 1, 2025.',
+      category: 'Deadline',
+      highPriority: true,
+      time: '2 hours ago',
+      read: false
+    },
+    {
+      id: 'nf-2',
+      icon: 'fa-check',
+      iconTone: 'bg-emerald-100 text-emerald-700',
+      title: 'Calendar Approved: Brookland MS',
+      description: 'CAL-2025-0412 (Brookland MS, SY 2025-26) approved by J. Torres on Sep 12.',
+      category: 'Approval',
+      highPriority: false,
+      time: '5 hours ago',
+      read: false
+    },
+    {
+      id: 'nf-3',
+      icon: 'fa-triangle-exclamation',
+      iconTone: 'bg-red-100 text-red-700',
+      title: 'Compliance Violation: Cardozo EC',
+      description: 'Cardozo EC exceeds 20-day early dismissal limit with 23 scheduled dismissals.',
+      category: 'Compliance',
+      highPriority: true,
+      time: 'Yesterday',
+      read: false
+    },
+    {
+      id: 'nf-4',
+      icon: 'fa-bus',
+      iconTone: 'bg-o-accent-100 text-o-accent-700',
+      title: 'DOT Routing Conflict Detected',
+      description: 'Eliot-Hine MS Friday early dismissals conflict with DDOT Route #42. Action required.',
+      category: 'DOT Routing',
+      highPriority: true,
+      time: 'Yesterday',
+      read: true
+    },
+    {
+      id: 'nf-5',
+      icon: 'fa-clock',
+      iconTone: 'bg-amber-100 text-amber-700',
+      title: 'Waiver Submission Window Opens Nov 1',
+      description: 'The makeup day waiver submission window opens November 1, 2025. Prepare documentation.',
+      category: 'Deadline',
+      highPriority: false,
+      time: '2 days ago',
+      read: true
+    },
+    {
+      id: 'nf-6',
+      icon: 'fa-check',
+      iconTone: 'bg-emerald-100 text-emerald-700',
+      title: 'Calendar Under Review: Wilson HS',
+      description: 'CAL-2025-0401 (Wilson HS) is now under OSSE review. Est. 3-5 business days.',
+      category: 'Approval',
+      highPriority: false,
+      time: '3 days ago',
+      read: true
+    },
+    {
+      id: 'nf-7',
+      icon: 'fa-triangle-exclamation',
+      iconTone: 'bg-red-100 text-red-700',
+      title: 'ESY Documentation Missing: 3 schools',
+      description: 'Achievement Prep, Eliot-Hine MS, and Dunbar HS have not submitted ESY hours documentation.',
+      category: 'Compliance',
+      highPriority: true,
+      time: '3 days ago',
+      read: true
+    },
+    {
+      id: 'nf-8',
+      icon: 'fa-bus',
+      iconTone: 'bg-o-accent-100 text-o-accent-700',
+      title: 'DDOT Notified: Oct 13 Holiday',
+      description: 'DC DDOT has been notified of the October 13 school holiday. All routes cancelled.',
+      category: 'DOT Routing',
+      highPriority: false,
+      time: '1 week ago',
+      read: true
+    }
+  ];
+
+  readonly hoursSummaryReport: IReportLeaRow[] = [
+    { lea: 'DC Public Schools', schools: 116, avgHours: 1098, minHours: 1042, maxHours: 1142, compliant: 'Partial' },
+    { lea: 'KIPP DC', schools: 18, avgHours: 1176, minHours: 1150, maxHours: 1210, compliant: 'All Compliant' },
+    { lea: 'Achievement Prep', schools: 3, avgHours: 1054, minHours: 1040, maxHours: 1068, compliant: 'Partial' },
+    { lea: 'Friendship PCS', schools: 8, avgHours: 1085, minHours: 1060, maxHours: 1120, compliant: 'Partial' },
+    { lea: 'SEED PCS', schools: 1, avgHours: 1200, minHours: 1200, maxHours: 1200, compliant: 'All Compliant' }
+  ];
+}

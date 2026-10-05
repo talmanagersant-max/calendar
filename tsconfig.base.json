@@ -1,0 +1,35 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "module": "es2022",
+    "target": "ES2022",
+    "lib": ["ES2022", "dom"],
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": false,
+    "useDefineForClassFields": false,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@osse/shared/data-access": ["libs/shared/data-access/src/index.ts"],
+      "@osse/shared/ui": ["libs/shared/ui/src/index.ts"],
+      "@osse/ost/shared/ui": ["libs/ost/shared/ui/src/index.ts"],
+      "@osse/feature-dashboard": ["libs/feature-dashboard/src/index.ts"],
+      "@osse/feature-notification-center": ["libs/feature-notification-center/src/index.ts"],
+      "@osse/feature-lea": ["libs/feature-lea/src/index.ts"],
+      "@osse/feature-school": ["libs/feature-school/src/index.ts"],
+      "@osse/feature-calendar": ["libs/feature-calendar/src/index.ts"],
+      "@osse/feature-compliance": ["libs/feature-compliance/src/index.ts"],
+      "@osse/feature-reports": ["libs/feature-reports/src/index.ts"],
+      "@osse/feature-waiver": ["libs/feature-waiver/src/index.ts"],
+      "@osse/feature-approvals": ["libs/feature-approvals/src/index.ts"],
+      "@osse/feature-dot-routing": ["libs/feature-dot-routing/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

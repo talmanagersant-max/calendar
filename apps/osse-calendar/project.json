@@ -1,0 +1,44 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "osse-calendar",
+  "projectType": "application",
+  "sourceRoot": "apps/osse-calendar/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/angular:application",
+      "options": {
+        "outputPath": "dist/apps/osse-calendar",
+        "index": "apps/osse-calendar/src/index.html",
+        "browser": "apps/osse-calendar/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/osse-calendar/tsconfig.app.json",
+        "assets": [
+          "apps/osse-calendar/src/favicon.ico",
+          "apps/osse-calendar/src/assets"
+        ],
+        "styles": [
+          "node_modules/ag-grid-community/styles/ag-grid.css",
+          "node_modules/ag-grid-community/styles/ag-theme-alpine.css",
+          "node_modules/primeng/resources/themes/lara-light-blue/theme.css",
+          "node_modules/primeng/resources/primeng.min.css",
+          "node_modules/primeicons/primeicons.css",
+          "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
+          "apps/osse-calendar/src/styles.css"
+        ],
+        "scripts": []
+      }
+    },
+    "serve": {
+      "executor": "@nx/angular:dev-server",
+      "options": {
+        "buildTarget": "osse-calendar:build"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/osse-calendar/jest.config.ts"
+      }
+    }
+  }
+}

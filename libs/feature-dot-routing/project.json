@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "feature-dot-routing",
+  "projectType": "library",
+  "sourceRoot": "libs/feature-dot-routing/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Skipping feature-dot-routing build; app resolves sources through tsconfig path aliases.'"
+      }
+    }
+  }
+}

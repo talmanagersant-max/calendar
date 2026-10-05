@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "name": "ost-shared-ui",
+  "projectType": "library",
+  "sourceRoot": "libs/ost/shared/ui/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Skipping ost-shared-ui build; app resolves sources through tsconfig path aliases.'"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["libs/ost/shared/ui/**/*.ts"]
+      }
+    }
+  }
+}

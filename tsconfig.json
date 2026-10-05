@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "./apps/osse-calendar/tsconfig.app.json" },
+    { "path": "./apps/osse-calendar/tsconfig.spec.json" },
+    { "path": "./libs/shared/data-access/tsconfig.lib.json" },
+    { "path": "./libs/shared/ui/tsconfig.lib.json" },
+    { "path": "./libs/ost/shared/ui/tsconfig.lib.json" },
+    { "path": "./libs/feature-dashboard/tsconfig.lib.json" },
+    { "path": "./libs/feature-notification-center/tsconfig.lib.json" },
+    { "path": "./libs/feature-lea/tsconfig.lib.json" },
+    { "path": "./libs/feature-school/tsconfig.lib.json" },
+    { "path": "./libs/feature-calendar/tsconfig.lib.json" },
+    { "path": "./libs/feature-compliance/tsconfig.lib.json" },
+    { "path": "./libs/feature-reports/tsconfig.lib.json" },
+    { "path": "./libs/feature-waiver/tsconfig.lib.json" },
+    { "path": "./libs/feature-approvals/tsconfig.lib.json" },
+    { "path": "./libs/feature-dot-routing/tsconfig.lib.json" }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "feature-dashboard",
+  "projectType": "library",
+  "sourceRoot": "libs/feature-dashboard/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Skipping feature-dashboard build; app resolves sources through tsconfig path aliases.'"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "feature-reports",
+  "projectType": "library",
+  "sourceRoot": "libs/feature-reports/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Skipping feature-reports build; app resolves sources through tsconfig path aliases.'"
+      }
+    }
+  }
+}

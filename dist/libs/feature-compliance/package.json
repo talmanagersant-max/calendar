@@ -1,0 +1,7 @@
+{
+  "name": "feature-compliance",
+  "version": "0.0.1",
+  "module": "./src/lib/compliance-page.component.js",
+  "type": "module",
+  "main": "./src/lib/compliance-page.component.js"
+}

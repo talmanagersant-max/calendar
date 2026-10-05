@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "feature-notification-center",
+  "projectType": "library",
+  "sourceRoot": "libs/feature-notification-center/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Skipping feature-notification-center build; app resolves sources through tsconfig path aliases.'"
+      }
+    }
+  }
+}

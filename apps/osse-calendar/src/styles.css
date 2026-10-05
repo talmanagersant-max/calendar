@@ -1,0 +1,521 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: 'Public Sans', system-ui, -apple-system, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #f8fafc;
+  font-family: 'Public Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* App-wide: every native radio/checkbox picks up the brand color when checked,
+   independent of any bespoke "selected card" styling layered on top per-component. */
+input[type='radio'],
+input[type='checkbox'] {
+  accent-color: #2a84b1; /* o.primary.500 */
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-fade-slide-in {
+  animation: fadeSlideIn 0.28s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.anim-slide-in-right {
+  animation: slideInFromRight 0.28s ease-out;
+}
+
+.ag-theme-alpine {
+  --ag-header-background-color: #f8fafc;
+  --ag-header-foreground-color: #0f172a;
+  --ag-odd-row-background-color: #ffffff;
+  --ag-even-row-background-color: #ffffff;
+  --ag-border-color: #e2e8f0;
+  --ag-row-height: 44px;
+  --ag-font-size: 13px;
+  --ag-font-family: 'Public Sans', system-ui, sans-serif;
+}
+
+/* =========================================================================
+   Button system (PrimeNG `pButton` only - see /apps/osse-calendar button
+   convention doc in the design notes). One severity per semantic purpose,
+   each mapped onto the app's own tailwind.config.js palette rather than
+   PrimeNG's stock theme colors. Every page must use `pButton` (or matching
+   ag-grid cell-renderer markup, since ag-grid cells render outside Angular
+   and can't host directives - those reuse these exact class names so they
+   stay visually identical to real p-button elements).
+
+   Severity -> purpose:
+     (default)  primary CTA           - o.primary  (brand teal, #006085)
+     secondary  secondary/neutral action - slate
+     success    approve / positive      - emerald
+     info       informational / view    - o.accent  (secondary blue)
+     warning    reminder / needs-attention - amber
+     danger     destructive / reject     - o.secondary (brand rose, #BC2444)
+     help       special emphasis         - violet
+     contrast   max-emphasis on light bg - slate-900
+
+   Variants: solid (default), [outlined]="true", [text]="true".
+   Sizes: default, [size]="'small'" (-> .p-button-sm), [size]="'large'".
+   ========================================================================= */
+.p-button {
+  font-family: 'Public Sans', system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.5rem 0.875rem;
+  border-radius: 4px;
+  border-width: 1px;
+  border-style: solid;
+  gap: 0.4rem;
+  cursor: pointer;
+  line-height: 1.2;
+  align-self: center;
+  vertical-align: middle;
+}
+.p-button.p-button-sm {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.625rem;
+}
+.p-button.p-button-lg {
+  font-size: 0.9375rem;
+  padding: 0.625rem 1.125rem;
+}
+.p-button.p-button-icon-only {
+  padding: 0.5rem;
+  width: 2.25rem;
+}
+.p-button:focus {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(0, 96, 133, 0.35);
+}
+
+/* --- primary (default) : o.primary --------------------------------------- */
+.p-button,
+.p-button.p-button-primary {
+  background: #006085;
+  border-color: #006085;
+  color: #ffffff;
+}
+.p-button:enabled:hover,
+.p-button.p-button-primary:enabled:hover {
+  background: #004c6a;
+  border-color: #004c6a;
+}
+.p-button.p-button-outlined,
+.p-button.p-button-outlined.p-button-primary {
+  background: #ffffff;
+  color: #006085;
+  border-color: #a3cce0;
+}
+.p-button.p-button-outlined:enabled:hover,
+.p-button.p-button-outlined.p-button-primary:enabled:hover {
+  background: #e6f2f7;
+  border-color: #77b4d0;
+}
+.p-button.p-button-text,
+.p-button.p-button-text.p-button-primary {
+  background: transparent;
+  border-color: transparent;
+  color: #006085;
+}
+.p-button.p-button-text:enabled:hover,
+.p-button.p-button-text.p-button-primary:enabled:hover {
+  background: #e6f2f7;
+}
+
+/* --- secondary : slate --------------------------------------------------- */
+.p-button.p-button-secondary {
+  background: #475569;
+  border-color: #475569;
+  color: #ffffff;
+}
+.p-button.p-button-secondary:enabled:hover {
+  background: #334155;
+  border-color: #334155;
+}
+.p-button.p-button-outlined.p-button-secondary {
+  background: #ffffff;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+.p-button.p-button-outlined.p-button-secondary:enabled:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+.p-button.p-button-text.p-button-secondary {
+  background: transparent;
+  border-color: transparent;
+  color: #334155;
+}
+.p-button.p-button-text.p-button-secondary:enabled:hover {
+  background: #f1f5f9;
+}
+
+/* --- success : emerald ---------------------------------------------------- */
+.p-button.p-button-success {
+  background: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+.p-button.p-button-success:enabled:hover {
+  background: #047857;
+  border-color: #047857;
+}
+.p-button.p-button-outlined.p-button-success {
+  background: #ffffff;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+.p-button.p-button-outlined.p-button-success:enabled:hover {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+.p-button.p-button-text.p-button-success {
+  background: transparent;
+  border-color: transparent;
+  color: #047857;
+}
+.p-button.p-button-text.p-button-success:enabled:hover {
+  background: #ecfdf5;
+}
+
+/* --- info : o.accent (secondary blue) -------------------------------------- */
+.p-button.p-button-info {
+  background: #1447e6;
+  border-color: #1447e6;
+  color: #ffffff;
+}
+.p-button.p-button-info:enabled:hover {
+  background: #0f37bd;
+  border-color: #0f37bd;
+}
+.p-button.p-button-outlined.p-button-info {
+  background: #ffffff;
+  color: #1447e6;
+  border-color: #bfd3fe;
+}
+.p-button.p-button-outlined.p-button-info:enabled:hover {
+  background: #eef4ff;
+  border-color: #93b4fd;
+}
+.p-button.p-button-text.p-button-info {
+  background: transparent;
+  border-color: transparent;
+  color: #006085;
+}
+.p-button.p-button-text.p-button-info:enabled:hover {
+  background: #eef4ff;
+}
+
+/* --- warning : amber -------------------------------------------------------- */
+.p-button.p-button-warning {
+  background: #d97706;
+  border-color: #d97706;
+  color: #ffffff;
+}
+.p-button.p-button-warning:enabled:hover {
+  background: #b45309;
+  border-color: #b45309;
+}
+.p-button.p-button-outlined.p-button-warning {
+  background: #ffffff;
+  color: #b45309;
+  border-color: #fde68a;
+}
+.p-button.p-button-outlined.p-button-warning:enabled:hover {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+.p-button.p-button-text.p-button-warning {
+  background: transparent;
+  border-color: transparent;
+  color: #b45309;
+}
+.p-button.p-button-text.p-button-warning:enabled:hover {
+  background: #fffbeb;
+}
+
+/* --- danger : o.secondary (brand rose, #BC2444) ----------------------------- */
+.p-button.p-button-danger {
+  background: #bc2444;
+  border-color: #bc2444;
+  color: #ffffff;
+}
+.p-button.p-button-danger:enabled:hover {
+  background: #8d1a34;
+  border-color: #8d1a34;
+}
+.p-button.p-button-outlined.p-button-danger {
+  background: #ffffff;
+  color: #8d1a34;
+  border-color: #f4afbf;
+}
+.p-button.p-button-outlined.p-button-danger:enabled:hover {
+  background: #fdecef;
+  border-color: #ee87a1;
+}
+.p-button.p-button-text.p-button-danger {
+  background: transparent;
+  border-color: transparent;
+  color: #8d1a34;
+}
+.p-button.p-button-text.p-button-danger:enabled:hover {
+  background: #fdecef;
+}
+
+/* --- help : violet (special emphasis, distinct from primary/danger) -------- */
+.p-button.p-button-help {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: #ffffff;
+}
+.p-button.p-button-help:enabled:hover {
+  background: #6d28d9;
+  border-color: #6d28d9;
+}
+.p-button.p-button-outlined.p-button-help {
+  background: #ffffff;
+  color: #6d28d9;
+  border-color: #ddd6fe;
+}
+.p-button.p-button-outlined.p-button-help:enabled:hover {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+}
+.p-button.p-button-text.p-button-help {
+  background: transparent;
+  border-color: transparent;
+  color: #6d28d9;
+}
+.p-button.p-button-text.p-button-help:enabled:hover {
+  background: #f5f3ff;
+}
+
+/* --- contrast : slate-900 (max emphasis on light surfaces) ----------------- */
+.p-button.p-button-contrast {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+.p-button.p-button-contrast:enabled:hover {
+  background: #000000;
+  border-color: #000000;
+}
+.p-button.p-button-outlined.p-button-contrast {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+.p-button.p-button-outlined.p-button-contrast:enabled:hover {
+  background: #f1f5f9;
+}
+.p-button.p-button-text.p-button-contrast {
+  background: transparent;
+  border-color: transparent;
+  color: #0f172a;
+}
+.p-button.p-button-text.p-button-contrast:enabled:hover {
+  background: #f1f5f9;
+}
+
+.p-button:disabled,
+.p-button.p-disabled {
+  opacity: 0.5;
+}
+
+/* =========================================================================
+   PrimeNG form controls (p-dropdown, p-calendar, p-checkbox, p-radioButton).
+   Tailwind's preflight (`*, ::before, ::after { border-width: 0 }`) compiles
+   as plain unlayered CSS, while PrimeNG's theme rules live inside
+   `@layer primeng`. Per the CSS Cascade Layers spec, ANY unlayered
+   declaration beats ANY layered one regardless of selector specificity or
+   file order - so PrimeNG's own borders get silently zeroed everywhere.
+   Re-declared here (also unlayered, so it wins the same way) to restore
+   them, matching the app's existing field styling (rounded, border-slate-
+   300, o-primary focus ring) instead of just reinstating PrimeNG's own
+   look.
+   ========================================================================= */
+.p-dropdown {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+.p-dropdown:not(.p-disabled).p-focus {
+  border-color: #006085;
+  box-shadow: 0 0 0 2px rgba(0, 96, 133, 0.25);
+}
+.p-inputtext {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+.p-inputtext:enabled:focus {
+  outline: 0 none;
+  border-color: #006085;
+  box-shadow: 0 0 0 2px rgba(0, 96, 133, 0.25);
+}
+/* p-calendar's text input and its trigger button sit side by side (inline-flex,
+   no gap) - flatten the touching corners so they read as one joined control
+   instead of two disconnected pieces. */
+.p-calendar .p-inputtext {
+  border-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.p-calendar .p-datepicker-trigger {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.p-datepicker {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+.p-checkbox .p-checkbox-box {
+  border: 2px solid #cbd5e1;
+  border-radius: 4px;
+}
+.p-checkbox .p-checkbox-box.p-highlight {
+  border-color: #006085;
+  background: #006085;
+}
+.p-checkbox .p-checkbox-box:not(.p-disabled).p-focus {
+  box-shadow: 0 0 0 2px rgba(0, 96, 133, 0.25);
+}
+.p-radiobutton .p-radiobutton-box {
+  border: 2px solid #cbd5e1;
+}
+.p-radiobutton .p-radiobutton-box.p-highlight {
+  border-color: #006085;
+  background: #006085;
+}
+.p-radiobutton .p-radiobutton-box:not(.p-disabled).p-focus {
+  box-shadow: 0 0 0 2px rgba(0, 96, 133, 0.25);
+}
+
+.p-progressbar {
+  background: #e2e8f0;
+  border-radius: 9999px;
+  height: 0.5rem;
+}
+.p-progressbar .p-progressbar-label {
+  display: none;
+}
+.tone-accent .p-progressbar-value {
+  background: #1447e6;
+}
+.tone-success .p-progressbar-value {
+  background: #16a34a;
+}
+.tone-danger .p-progressbar-value {
+  background: #dc2626;
+}
+.tone-warning .p-progressbar-value {
+  background: #d97706;
+}
+
+/* =========================================================================
+   Toast notifications (p-toast) - banner-style callouts: a tinted background,
+   a colored left accent bar, and a solid dark icon badge (the badge itself
+   stays neutral black/white across all severities - only the bar and tint
+   carry the severity color). Colors reuse the same severity mapping as the
+   button system (info -> o.accent, warning -> amber, success -> emerald,
+   error -> o.secondary) for consistency across the app.
+   ========================================================================= */
+.p-toast {
+  width: 25rem;
+}
+.p-toast-message {
+  margin: 0 0 0.75rem 0;
+  border-radius: 0;
+  border-left-width: 5px;
+  border-left-style: solid;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+}
+.p-toast-message-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.125rem;
+}
+.p-toast-message-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  border-radius: 9999px;
+  background: #1a1a1a;
+  color: #ffffff;
+}
+.p-toast-message-icon svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+.p-toast-message-text {
+  margin: 0;
+}
+.p-toast-summary {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.p-toast-detail {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: #333333;
+}
+.p-toast-icon-close {
+  flex-shrink: 0;
+  color: #565656;
+}
+.p-toast-icon-close:hover {
+  color: #1a1a1a;
+}
+
+.p-toast-message-info {
+  background: #eef4ff;
+  border-left-color: #006085;
+}
+.p-toast-message-warn {
+  background: #fffbeb;
+  border-left-color: #d97706;
+}
+.p-toast-message-success {
+  background: #ecfdf5;
+  border-left-color: #059669;
+}
+.p-toast-message-error {
+  background: #fdecef;
+  border-left-color: #bc2444;
+}
