@@ -1,3 +1,8 @@
+// 950 stops for the status scales. Placeholder values (darkened from each 900) - swap in the
+// design-system `success950` / `warning950` tokens once available.
+const success950 = '#062e19';
+const warning950 = '#2b1400';
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./apps/**/*.{html,ts}', './libs/**/*.{html,ts}'],
@@ -66,6 +71,32 @@ module.exports = {
             700: '#0F37BD',
             800: '#102F93',
             900: '#122A74'
+          },
+          green: {
+            50: '#e8f6ee',
+            100: '#b7e2cb',
+            200: '#94d4b2',
+            300: '#63c18f',
+            400: '#45b579',
+            500: '#16a258',
+            600: '#149350',
+            700: '#10733e',
+            800: '#0c5930',
+            900: '#094425',
+            950: success950
+          },
+          orange: {
+            50: '#f9eee6',
+            100: '#ebcbb0',
+            200: '#e2b18a',
+            300: '#d58e54',
+            400: '#cd7833',
+            500: '#c05600',
+            600: '#af4e00',
+            700: '#883d00',
+            800: '#6a2f00',
+            900: '#401d00',
+            950: warning950
           }
         }
       },

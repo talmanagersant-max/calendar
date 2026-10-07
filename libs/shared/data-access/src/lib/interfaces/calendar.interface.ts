@@ -11,6 +11,10 @@ export interface ICalendarSchedule {
   leaId: string;
   siteId: string | null;
   programId: string | null;
+  /** Directory school the site belongs to (null for LEA-level calendars). */
+  schoolId?: string | null;
+  /** School-year cycle id, e.g. "sy-2025-26" or "esy-2025" - the top-nav School Year filter key. */
+  yearId?: string;
   /** Set only for a Grade Level Calendar (a site-scoped calendar that further narrows to one grade band). */
   grade?: string | null;
   /** Set when this calendar inherits holidays/marking periods from another (LEA -> Site, or Site -> Grade). */

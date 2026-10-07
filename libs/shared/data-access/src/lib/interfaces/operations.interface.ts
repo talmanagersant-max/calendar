@@ -17,6 +17,9 @@ export interface IHoliday {
   dates: string;
   type: HolidayType;
   appliesTo: string;
+  /** ISO start/end (inclusive) - drives the calendar wizard's holiday days. */
+  start?: string;
+  end?: string;
 }
 
 export type EsyStatus = 'Approved' | 'Under Review' | 'Missing';
@@ -53,8 +56,10 @@ export interface ITwelveMonthCalendar {
 
 export interface IOverlapMonthRow {
   school: string;
-  color: string;
-  active: boolean;
+  /** Months (0-11, calendar months) the calendar is in session. */
+  activeMonths: number[];
+  /** Index into the page's Tailwind tone palette. */
+  tone: number;
 }
 
 export interface IComplianceRingBucket {
@@ -69,13 +74,15 @@ export interface IComplianceRing {
   current: number;
   total: number;
   percentLabel: string;
-  ringColor: string;
+  /** Tailwind stroke class for the ring, e.g. "stroke-emerald-600". */
+  ringClass: string;
   buckets: IComplianceRingBucket[];
 }
 
 export type ComplianceFlag = 'Compliant' | 'Violation';
 
 export interface IEarlyDismissalRow {
+  schoolId?: string;
   school: string;
   days: number;
   minutesImpact: number;
@@ -86,6 +93,8 @@ export type ViolationSeverity = 'Critical' | 'High' | 'Medium' | 'Low';
 export type ViolationStatus = 'Open' | 'Waiver Pending' | 'Resolved';
 
 export interface IComplianceViolation {
+  id?: string;
+  schoolId?: string;
   school: string;
   issue: string;
   days: string;
@@ -96,6 +105,9 @@ export interface IComplianceViolation {
 export type WaiverStatus = 'Approved' | 'Under Review' | 'Pending' | 'Rejected';
 
 export interface IWaiver {
+  leaId?: string;
+  schoolId?: string | null;
+  yearId?: string;
   id: string;
   school: string;
   lea: string;
@@ -135,6 +147,8 @@ export interface IChangeRequest {
 export type RoutingConflictStatus = 'Open' | 'In Progress' | 'Resolved';
 
 export interface IRoutingConflict {
+  id?: string;
+  schoolId?: string;
   school: string;
   issue: string;
   routes: string;
@@ -143,6 +157,8 @@ export interface IRoutingConflict {
 }
 
 export interface IEarlyDismissalSchedule {
+  id?: string;
+  schoolId?: string;
   school: string;
   date: string;
   dismissTime: string;
@@ -151,6 +167,7 @@ export interface IEarlyDismissalSchedule {
 }
 
 export interface INonInstructionalDay {
+  id?: string;
   schools: string;
   date: string;
   type: string;
@@ -169,6 +186,9 @@ export interface IReportDefinition {
 export type NotificationCategory = 'Deadline' | 'Approval' | 'Compliance' | 'DOT Routing';
 
 export interface INotificationFeedItem {
+  /** Scope the item belongs to; items without one show in every scope. */
+  leaId?: string;
+  yearId?: string;
   id: string;
   icon: string;
   iconTone: string;

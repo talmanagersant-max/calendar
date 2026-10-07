@@ -1,11 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellClickedEvent, ColDef } from 'ag-grid-community';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { ToastModule } from 'primeng/toast';
-import { IEarlyDismissalSchedule, INonInstructionalDay, IRoutingConflict, RoutingConflictStatus, SampleDataRepository } from '@osse/shared/data-access';
-import { NotificationFeedService } from '@osse/shared/ui';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { IEarlyDismissalSchedule, INonInstructionalDay, IRoutingConflict, RoutingConflictStatus } from '@osse/shared/data-access';
+import { NotificationFeedService, ShellDataService, ToastService } from '@osse/shared/ui';
 
 const SEVERITY_CLASS: Record<string, string> = {
   High: 'border-red-200 bg-red-50 text-red-700',
@@ -22,41 +20,47 @@ const CONFLICT_STATUS_CLASS: Record<RoutingConflictStatus, string> = {
 @Component({
   selector: 'osse-dot-routing-dashboard-page',
   standalone: true,
-  imports: [AgGridAngular, ButtonModule, ToastModule],
-  providers: [MessageService],
+  imports: [AgGridAngular, NzButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-toast position="top-right" />
 
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
-        <h1 class="text-2xl font-semibold text-slate-900">DOT Routing Management</h1>
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-900">DOT Routing Management</h1>
+          <p class="mt-1 text-sm text-slate-500">{{ shell.scopeLabel() }} · {{ shell.year().label }}</p>
+        </div>
         <div class="flex items-center gap-2.5">
-          <button pButton type="button" [outlined]="true" severity="secondary" (click)="notify('Export started')">Export to DDOT</button>
-          <button pButton type="button" (click)="notifyAllDdot()">Notify All DDOT</button>
+          <button nz-button nzType="default" class="btn-secondary" type="button" (click)="notify('Export started')">Export to DDOT</button>
+          <button nz-button nzType="primary" type="button" (click)="notifyAllDdot()">Notify All DDOT</button>
         </div>
       </div>
 
-      <div class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
-        <span class="flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-amber-600"></i>3 unresolved routing conflicts require DDOT notification before Sep 20, 2025.</span>
-        <a href="javascript:void(0)" class="shrink-0 font-semibold underline" (click)="notify('All conflicts flagged for DDOT')">Notify All →</a>
-      </div>
+      @if (stats().open > 0) {
+        <div class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          <span class="flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600" aria-hidden="true"></i>
+            {{ stats().open }} unresolved routing conflict(s) require DDOT notification.
+          </span>
+          <a href="javascript:void(0)" class="shrink-0 font-semibold underline" (click)="notifyAllDdot()">Notify All →</a>
+        </div>
+      }
 
       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-lg border border-slate-200 bg-white p-4 text-center">
-          <div class="font-mono text-2xl font-semibold text-red-600">3</div>
+          <div class="font-mono text-2xl font-semibold text-red-600">{{ stats().open }}</div>
           <div class="mt-1 text-xs text-slate-500">Open Conflicts</div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-4 text-center">
-          <div class="font-mono text-2xl font-semibold text-amber-600">2</div>
+          <div class="font-mono text-2xl font-semibold text-amber-600">{{ stats().unnotified }}</div>
           <div class="mt-1 text-xs text-slate-500">Unnotified Dismissals</div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-4 text-center">
-          <div class="font-mono text-2xl font-semibold text-o-accent-600">142</div>
+          <div class="font-mono text-2xl font-semibold text-o-accent-600">{{ stats().routes }}</div>
           <div class="mt-1 text-xs text-slate-500">Active Routes</div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-4 text-center">
-          <div class="font-mono text-2xl font-semibold text-emerald-600">38</div>
+          <div class="font-mono text-2xl font-semibold text-emerald-600">{{ stats().schools }}</div>
           <div class="mt-1 text-xs text-slate-500">Schools Covered</div>
         </div>
       </div>
@@ -114,13 +118,24 @@ const CONFLICT_STATUS_CLASS: Record<RoutingConflictStatus, string> = {
   `
 })
 export class DotRoutingDashboardPageComponent {
-  private readonly repo = inject(SampleDataRepository);
-  private readonly messageService = inject(MessageService);
+  readonly shell = inject(ShellDataService);
+  private readonly toast = inject(ToastService);
   private readonly notificationFeed = inject(NotificationFeedService);
 
-  readonly routingConflicts = signal<IRoutingConflict[]>(this.repo.routingConflicts);
-  readonly upcomingDismissals = signal<IEarlyDismissalSchedule[]>(this.repo.upcomingDismissals);
-  readonly nonInstructionalDays = signal<INonInstructionalDay[]>(this.repo.nonInstructionalDays);
+  readonly routingConflicts = this.shell.routingConflicts;
+  readonly upcomingDismissals = this.shell.upcomingDismissals;
+  readonly nonInstructionalDays = this.shell.nonInstructionalDays;
+
+  readonly stats = computed(() => {
+    const schools = this.shell.schoolsInScope().filter((s) => s.grades[0] !== 'Adult');
+    return {
+      open: this.routingConflicts().filter((c) => c.status !== 'Resolved').length,
+      unnotified: this.upcomingDismissals().filter((d) => !d.notified).length,
+      // Mock estimate: a couple of DDOT routes per school plus two per site.
+      routes: schools.reduce((sum, s) => sum + 2 + s.sites.length * 2, 0),
+      schools: schools.length
+    };
+  });
 
   readonly defaultColDef: ColDef = { resizable: true, sortable: true, suppressMovable: true };
 
@@ -156,8 +171,8 @@ export class DotRoutingDashboardPageComponent {
       sortable: false,
       cellRenderer: (params: { data: IRoutingConflict }) => {
         if (params.data.status === 'Resolved') return '';
-        const notify = `<button type="button" data-act="notify" class="p-button p-button-sm mr-1.5">Notify DDOT</button>`;
-        const resolve = `<button type="button" data-act="resolve" class="p-button p-button-sm p-button-outlined p-button-secondary">Resolve</button>`;
+        const notify = `<button type="button" data-act="notify" class="ant-btn ant-btn-primary ant-btn-sm mr-1.5">Notify DDOT</button>`;
+        const resolve = `<button type="button" data-act="resolve" class="ant-btn ant-btn-default ant-btn-sm btn-secondary">Resolve</button>`;
         return notify + resolve;
       }
     }
@@ -183,7 +198,7 @@ export class DotRoutingDashboardPageComponent {
       minWidth: 130,
       sortable: false,
       cellRenderer: (p: { data?: IEarlyDismissalSchedule }) =>
-        p.data?.notified ? '' : `<button type="button" data-act="notify" class="p-button p-button-sm">Notify DDOT</button>`
+        p.data?.notified ? '' : `<button type="button" data-act="notify" class="ant-btn ant-btn-primary ant-btn-sm">Notify DDOT</button>`
     }
   ];
 
@@ -200,20 +215,22 @@ export class DotRoutingDashboardPageComponent {
       cellRenderer: (p: { value: 'Notified' | 'Pending' }) =>
         p.value === 'Notified'
           ? `<span class="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Notified</span>`
-          : `<span class="inline-flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">Pending</span><button type="button" data-act="notify" class="p-button p-button-sm ml-1.5">Notify</button>`
+          : `<span class="inline-flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">Pending</span><button type="button" data-act="notify" class="ant-btn ant-btn-primary ant-btn-sm ml-1.5">Notify</button>`
     }
   ];
 
   notify(message: string): void {
-    this.messageService.add({ severity: 'info', summary: message, detail: '' });
+    this.toast.add({ severity: 'info', summary: message, detail: '' });
   }
 
   notifyAllDdot(): void {
     const openConflicts = this.routingConflicts().filter((c) => c.status !== 'Resolved');
-    this.routingConflicts.update((list) => list.map((c) => (c.status === 'Open' ? { ...c, status: 'In Progress' as const } : c)));
-    this.upcomingDismissals.update((list) => list.map((d) => ({ ...d, notified: true })));
-    this.nonInstructionalDays.update((list) => list.map((d) => ({ ...d, status: 'Notified' as const })));
-    this.messageService.add({ severity: 'success', summary: 'All DDOT contacts notified', detail: `${openConflicts.length} conflict(s) and all pending dismissals/closures were flagged for DDOT.` });
+    this.shell.setConflictStatus(
+      this.routingConflicts().filter((c) => c.status === 'Open').map((c) => c.id ?? ''),
+      'In Progress'
+    );
+    this.shell.markNotified([...this.upcomingDismissals().map((d) => d.id ?? ''), ...this.nonInstructionalDays().map((d) => d.id ?? '')]);
+    this.toast.add({ severity: 'success', summary: 'All DDOT contacts notified', detail: `${openConflicts.length} conflict(s) and all pending dismissals/closures were flagged for DDOT.` });
     this.notificationFeed.add({ title: 'DDOT notified', description: `All open routing conflicts and pending schedules were flagged for DDOT.`, category: 'DOT Routing' });
   }
 
@@ -222,12 +239,13 @@ export class DotRoutingDashboardPageComponent {
     const target = event.event?.target as HTMLElement | undefined;
     const act = target?.dataset?.['act'];
     if (act === 'notify') {
-      this.messageService.add({ severity: 'info', summary: 'DDOT notified', detail: `${event.data.school}'s routing conflict was flagged for DDOT.` });
+      if (event.data.status === 'Open') this.shell.setConflictStatus([event.data.id ?? ''], 'In Progress');
+      this.toast.add({ severity: 'info', summary: 'DDOT notified', detail: `${event.data.school}'s routing conflict was flagged for DDOT.` });
       this.notificationFeed.add({ title: 'DDOT notified', description: `${event.data.school}: ${event.data.issue}`, category: 'DOT Routing' });
     }
     if (act === 'resolve') {
-      this.routingConflicts.update((list) => list.map((c) => (c.school === event.data!.school && c.issue === event.data!.issue ? { ...c, status: 'Resolved' as const } : c)));
-      this.messageService.add({ severity: 'success', summary: 'Conflict resolved', detail: `${event.data.school}'s routing conflict was marked resolved.` });
+      this.shell.setConflictStatus([event.data.id ?? ''], 'Resolved');
+      this.toast.add({ severity: 'success', summary: 'Conflict resolved', detail: `${event.data.school}'s routing conflict was marked resolved.` });
       this.notificationFeed.add({ title: 'Routing conflict resolved', description: `${event.data.school}: ${event.data.issue}`, category: 'DOT Routing' });
     }
   }
@@ -236,8 +254,8 @@ export class DotRoutingDashboardPageComponent {
     if (!event.data || event.event?.target === undefined) return;
     const act = (event.event.target as HTMLElement).dataset?.['act'];
     if (act === 'notify') {
-      this.upcomingDismissals.update((list) => list.map((d) => (d.school === event.data!.school && d.date === event.data!.date ? { ...d, notified: true } : d)));
-      this.messageService.add({ severity: 'success', summary: 'DDOT notified', detail: `${event.data.school}'s early dismissal on ${event.data.date} was flagged for DDOT.` });
+      this.shell.markNotified([event.data.id ?? '']);
+      this.toast.add({ severity: 'success', summary: 'DDOT notified', detail: `${event.data.school}'s early dismissal on ${event.data.date} was flagged for DDOT.` });
       this.notificationFeed.add({ title: 'DDOT notified of early dismissal', description: `${event.data.school}, ${event.data.date}`, category: 'DOT Routing' });
     }
   }
@@ -246,8 +264,8 @@ export class DotRoutingDashboardPageComponent {
     if (!event.data || event.event?.target === undefined) return;
     const act = (event.event.target as HTMLElement).dataset?.['act'];
     if (act === 'notify') {
-      this.nonInstructionalDays.update((list) => list.map((d) => (d.schools === event.data!.schools && d.date === event.data!.date ? { ...d, status: 'Notified' as const } : d)));
-      this.messageService.add({ severity: 'success', summary: 'DDOT notified', detail: `${event.data.schools} closure on ${event.data.date} was flagged for DDOT.` });
+      this.shell.markNotified([event.data.id ?? '']);
+      this.toast.add({ severity: 'success', summary: 'DDOT notified', detail: `${event.data.schools} closure on ${event.data.date} was flagged for DDOT.` });
       this.notificationFeed.add({ title: 'DDOT notified of closure', description: `${event.data.schools}, ${event.data.date}`, category: 'DOT Routing' });
     }
   }

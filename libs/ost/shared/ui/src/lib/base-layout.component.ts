@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { BreadcrumbService, CalendarPermissionsService, CurrentContextService, CurrentRoleService, NotificationFeedService, SchoolYearService } from '../../../../../shared/ui/src';
-import { SampleDataRepository } from '../../../../../shared/data-access/src';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { CalendarPermissionsService, CurrentContextService, CurrentRoleService, NotificationFeedService, SchoolYearService, ShellDataService } from '../../../../../shared/ui/src';
 
 interface INavItem {
   path: string;
@@ -20,128 +19,74 @@ interface INavSection {
 @Component({
   selector: 'oss-base-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ButtonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NzButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-slate-50 font-sans text-slate-900">
-      <aside
-        class="fixed inset-y-0 left-0 flex flex-col border-r border-slate-800 bg-o-primary-900 transition-all"
-        [class.w-60]="!collapsed()"
-        [class.w-16]="collapsed()"
-      >
-        <div class="flex items-center justify-between border-b border-slate-800 px-4 py-4">
-          @if (!collapsed()) {
-            <div>
-              <div class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">OSSE</div>
-              <div class="mt-0.5 text-sm font-semibold text-white">Calendar Management</div>
-            </div>
-          }
-          <button
-            pButton
-            type="button"
-            [text]="true"
-            [rounded]="true"
-            severity="secondary"
-            class="!h-7 !w-7 shrink-0 !p-0 !text-slate-400 hover:!bg-slate-800 hover:!text-white"
-            [icon]="collapsed() ? 'fa-solid fa-angles-right' : 'fa-solid fa-angles-left'"
-            (click)="toggleCollapsed()"
-          ></button>
-        </div>
-
-        <nav class="flex-1 overflow-y-auto px-2 py-4">
-          @if (canCreateCalendars()) {
-            <a
-              #createLink="routerLinkActive"
-              routerLink="/calendar/create"
-              routerLinkActive
-              [routerLinkActiveOptions]="{ exact: false }"
-              [attr.aria-current]="createLink.isActive ? 'page' : null"
-              [class.ring-2]="createLink.isActive"
-              [class.ring-white]="createLink.isActive"
-              [class.ring-offset-2]="createLink.isActive"
-              [class.ring-offset-o-primary-900]="createLink.isActive"
-              class="group relative mb-4 flex items-center gap-3 rounded-xl bg-o-accent-600 px-3 py-3 text-white shadow-md transition hover:bg-o-accent-500 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-o-primary-900"
-            >
-              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15 text-base transition group-hover:bg-white/25">
-                <i class="fa-solid fa-calendar-plus" aria-hidden="true"></i>
+    <div class="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-900">
+      <!-- Not sticky: the header scrolls away so content gets the full viewport; the sidebar stays pinned for navigation.
+           Both rows share the sidebar navy so the chrome reads as one continuous frame. -->
+      <header class="bg-o-primary-900">
+        <div class="flex items-center gap-4 px-5 py-2">
+          <a routerLink="/dashboard2" class="group flex min-w-0 items-center gap-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-o-primary-900">
+            <!-- Rounded clip trims the JPG's white corners so the magenta mark sits directly on navy -->
+            <img src="assets/osse-logo.jpg" alt="OSSE - Office of the State Superintendent of Education" class="h-10 w-auto shrink-0 rounded-md" />
+            <span class="hidden h-10 w-px shrink-0 bg-white/15 sm:block" aria-hidden="true"></span>
+            <span class="flex min-w-0 flex-col leading-tight">
+              <span class="hidden truncate text-[10px] font-bold uppercase tracking-[0.22em] text-o-secondary-300 md:block">Office of the State Superintendent of Education</span>
+              <span class="truncate text-base font-extrabold tracking-tight text-white sm:text-xl">
+                Entity Calendar Management System
               </span>
-              @if (!collapsed()) {
-                <span class="min-w-0 flex-1 text-left">
-                  <span class="block truncate text-sm font-semibold leading-tight">Create Calendar</span>
-                  <span class="block truncate text-[11px] text-white/70">Start a new calendar</span>
-                </span>
-                <i class="fa-solid fa-chevron-right shrink-0 text-xs text-white/60 transition group-hover:translate-x-0.5" aria-hidden="true"></i>
-                @if (createLink.isActive) {
-                  <span class="sr-only">(current page)</span>
-                }
-              }
-            </a>
-          }
+            </span>
+          </a>
 
-          @for (section of navSections; track section.title) {
-            <div class="mb-4">
-              @if (!collapsed()) {
-                <div class="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">{{ section.title }}</div>
+          <div class="ml-auto flex shrink-0 items-center gap-3">
+            <button
+              nz-button
+              nzType="text"
+              nzShape="round"
+              type="button"
+              aria-label="Notifications"
+              class="btn-secondary relative !h-9 !w-9 !p-0 !text-white/80 hover:!bg-white/10 hover:!text-white"
+              (click)="onBellClick()"
+            >
+              <i class="fa-regular fa-bell text-lg"></i>
+              @if (unreadNotifications() > 0) {
+                <span class="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-o-primary-900 bg-o-secondary-400"></span>
               }
-              <div class="space-y-0.5">
-                @for (item of section.items; track item.path) {
-                  @if (!item.requiresCreate || canCreateCalendars()) {
-                    <a
-                      [routerLink]="item.path"
-                      routerLinkActive="bg-o-primary-600 text-white"
-                      [routerLinkActiveOptions]="{ exact: true }"
-                      class="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                    >
-                      <i class="fa-solid w-4 shrink-0 text-center" [class]="item.icon"></i>
-                      @if (!collapsed()) {
-                        <span class="flex-1 truncate">{{ item.label }}</span>
-                        @if (badgeFor(item); as badge) {
-                          <span class="rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white w-5 h-5 flex items-center justify-center">{{ badge }}</span>
-                        }
-                      }
-                    </a>
-                  }
-                }
-              </div>
-            </div>
-          }
-        </nav>
-
-        <div class="border-t border-slate-800 px-3 py-3">
-          <div class="flex items-center gap-2.5">
-            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-o-primary-600 text-xs font-bold text-white">JT</div>
-            @if (!collapsed()) {
-              <div class="min-w-0 flex-1">
+            </button>
+            <span class="hidden h-8 w-px bg-white/15 sm:block" aria-hidden="true"></span>
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-o-secondary-600 text-xs font-bold text-white ring-2 ring-white/20">JT</div>
+              <div class="hidden min-w-0 sm:block">
                 <div class="truncate text-sm font-semibold text-white">J. Torres</div>
                 <label class="sr-only" for="roleSwitcher">Viewing as role</label>
                 <select
                   id="roleSwitcher"
-                  class="mt-0.5 w-full max-w-full rounded borderborder-slate-700 bg-transparent py-0.5 pl-1.5 pr-5 text-xs text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1 focus-visible:ring-offset-o-primary-900"
+                  class="-ml-1 max-w-[12rem] cursor-pointer rounded bg-transparent py-0.5 pl-1 pr-1 text-xs text-white/60 outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-white/60"
                   (change)="onRoleChange($any($event.target).value)"
                 >
                   @for (role of roles; track role) {
-                    <option [value]="role" [selected]="role === currentRole()">{{ role }}</option>
+                    <option class="text-slate-900" [value]="role" [selected]="role === currentRole()">{{ role }}</option>
                   }
                 </select>
               </div>
-            }
+            </div>
           </div>
         </div>
-      </aside>
 
-      <div class="flex min-h-screen flex-col transition-all" [class.ml-60]="!collapsed()" [class.ml-16]="collapsed()">
-        <div class="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-o-primary-900 bg-o-primary-800 px-6 py-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-1 py-1">
           <div class="flex flex-wrap items-stretch divide-x divide-white/10">
             <label class="group relative flex cursor-pointer flex-col justify-center gap-0.5 px-4 py-1 transition hover:bg-white/5 focus-within:bg-white/10">
               <span class="text-[10px] font-bold uppercase tracking-wider text-white/50">LEA</span>
               <span class="relative flex items-center">
                 <select
-                  class="max-w-[11rem] cursor-pointer appearance-none truncate bg-transparent pr-4 text-sm font-semibold text-white outline-none"
-                  [value]="contextLeaId() ?? ''"
+                  aria-label="LEA"
+                  class="max-w-[14rem] cursor-pointer appearance-none truncate bg-transparent pr-4 text-sm font-semibold text-white outline-none"
+                  [title]="contextLea()?.name ?? ''"
                   (change)="onContextLeaChange($any($event.target).value)"
                 >
-                  @for (lea of leaList; track lea.id) {
-                    <option class="text-slate-900" [value]="lea.id">{{ lea.name }}</option>
+                  @for (lea of leaOptions; track lea.id) {
+                    <option class="text-slate-900" [value]="lea.id" [selected]="lea.id === contextLeaId()">{{ lea.name }}</option>
                   }
                 </select>
                 <i class="fa-solid fa-chevron-down pointer-events-none absolute right-0 text-[9px] text-white/50" aria-hidden="true"></i>
@@ -149,16 +94,17 @@ interface INavSection {
             </label>
 
             <label class="group relative flex cursor-pointer flex-col justify-center gap-0.5 px-4 py-1 transition hover:bg-white/5 focus-within:bg-white/10">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-white/50">Site</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-white/50">School</span>
               <span class="relative flex items-center">
                 <select
-                  class="max-w-[11rem] cursor-pointer appearance-none truncate bg-transparent pr-4 text-sm font-semibold text-white outline-none"
-                  [value]="contextSiteId() ?? ''"
-                  (change)="onContextSiteChange($any($event.target).value)"
+                  aria-label="School"
+                  class="max-w-[16rem] cursor-pointer appearance-none truncate bg-transparent pr-4 text-sm font-semibold text-white outline-none"
+                  [title]="contextSchool()?.name ?? 'All Schools'"
+                  (change)="onContextSchoolChange($any($event.target).value)"
                 >
-                  <option class="text-slate-900" value="">All Sites</option>
-                  @for (site of contextSites(); track site.id) {
-                    <option class="text-slate-900" [value]="site.id">{{ site.name }}</option>
+                  <option class="text-slate-900" value="" [selected]="!contextSchoolId()">All Schools ({{ contextSchools().length }})</option>
+                  @for (school of contextSchools(); track school.id) {
+                    <option class="text-slate-900" [value]="school.id" [selected]="school.id === contextSchoolId()">{{ school.name }}</option>
                   }
                 </select>
                 <i class="fa-solid fa-chevron-down pointer-events-none absolute right-0 text-[9px] text-white/50" aria-hidden="true"></i>
@@ -187,60 +133,124 @@ interface INavSection {
           </div>
 
           <div class="flex flex-wrap items-center gap-2.5">
-            <span class="inline-flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              {{ header.missingCalendarsCount }} missing calendars
-            </span>
-            <span class="inline-flex items-center gap-1.5 rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
-              <i class="fa-solid fa-circle-minus"></i>
-              {{ header.routingConflictsCount }} routing conflicts
-            </span>
-            <button
-              pButton
-              type="button"
-              [text]="true"
-              [rounded]="true"
-              severity="secondary"
-              class="relative !h-8 !w-8 !p-0 !text-white/70 hover:!bg-white/10 hover:!text-white"
-              (click)="onBellClick()"
-            >
-              <i class="fa-regular fa-bell"></i>
-              @if (header.unreadNotifications > 0) {
-                <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500"></span>
-              }
-            </button>
+            @if (missingCalendarsCount() > 0) {
+              <a routerLink="/calendar" class="inline-flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                {{ missingCalendarsCount() }} missing calendar{{ missingCalendarsCount() === 1 ? '' : 's' }}
+              </a>
+            }
+            @if (routingConflictsCount() > 0) {
+              <a routerLink="/dot-routing" class="inline-flex items-center gap-1.5 rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100">
+                <i class="fa-solid fa-circle-minus" aria-hidden="true"></i>
+                {{ routingConflictsCount() }} routing conflict{{ routingConflictsCount() === 1 ? '' : 's' }}
+              </a>
+            }
+            @if (canCreateCalendars()) {
+              <span class="mx-1 hidden h-7 w-px bg-white/15 sm:block" aria-hidden="true"></span>
+              <!-- o-orange-500: white text 4.59:1 (WCAG AA), button vs. navy bar 3.17:1 (non-text 3:1).
+                   Keep all text solid white - translucent white drops below 4.5:1 on this orange. -->
+              <a
+                #createLink="routerLinkActive"
+                routerLink="/calendar/create"
+                routerLinkActive
+                [routerLinkActiveOptions]="{ exact: false }"
+                [attr.aria-current]="createLink.isActive ? 'page' : null"
+                [class.ring-2]="createLink.isActive"
+                [class.ring-white]="createLink.isActive"
+                [class.ring-offset-2]="createLink.isActive"
+                [class.ring-offset-o-primary-900]="createLink.isActive"
+                class="group inline-flex items-center gap-2 rounded-lg bg-o-orange-500 px-3.5 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-o-orange-600 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-o-primary-900"
+              >
+                <i class="fa-solid fa-calendar-plus" aria-hidden="true"></i>
+                Create Calendar
+                @if (createLink.isActive) {
+                  <span class="sr-only">(current page)</span>
+                }
+              </a>
+            }
           </div>
         </div>
 
-        <main class="flex-1 p-6">
-          <header class="mb-4">
-            <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-1.5 text-xs font-medium">
-              <a routerLink="/dashboard2" class="text-o-accent-600 hover:underline">OSSE</a>
-              @for (crumb of breadcrumbs(); track crumb.url) {
-                <span class="text-slate-300">/</span>
-                <a [routerLink]="crumb.url" class="text-o-accent-600 hover:underline" [class.pointer-events-none]="$last" [class.text-slate-400]="$last">{{ crumb.label }}</a>
-              }
-            </nav>
-          </header>
+      </header>
 
+      <!-- flex-1 fills the rest of the viewport, so short pages end at the screen bottom (no extra
+           scroll). The aside's height comes only from the page content (its nav sits in an
+           absolutely positioned layer, so it never stretches the page); inside that layer the nav
+           column is sticky, capped at one screen, and scrolls on its own when taller. -->
+      <div class="flex flex-1">
+      <aside
+        class="relative shrink-0 bg-o-primary-900 transition-all"
+        [class.w-60]="!collapsed()"
+        [class.w-16]="collapsed()"
+      >
+        <div class="absolute inset-0">
+        <div class="sticky top-0 flex h-full max-h-screen flex-col">
+        <div class="flex justify-end px-3 pt-3">
+          <button
+            nz-button
+            nzType="text"
+            nzShape="circle"
+            type="button"
+            [attr.aria-label]="collapsed() ? 'Expand navigation' : 'Collapse navigation'"
+            class="btn-secondary btn-icon-only !h-7 !w-7 shrink-0 !p-0 !text-slate-400 hover:!bg-slate-800 hover:!text-white"
+            (click)="toggleCollapsed()"
+          ><i [class]="collapsed() ? 'fa-solid fa-angles-right' : 'fa-solid fa-angles-left'" aria-hidden="true"></i></button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto px-2 py-4">
+          @for (section of navSections; track section.title) {
+            <div class="mb-4">
+              @if (!collapsed()) {
+                <div class="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">{{ section.title }}</div>
+              }
+              <div class="space-y-0.5">
+                @for (item of section.items; track item.path) {
+                  @if (!item.requiresCreate || canCreateCalendars()) {
+                    <a
+                      [routerLink]="item.path"
+                      routerLinkActive="bg-o-primary-600 text-white"
+                      [routerLinkActiveOptions]="{ exact: true }"
+                      class="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                    >
+                      <i class="fa-solid w-4 shrink-0 text-center" [class]="item.icon"></i>
+                      @if (!collapsed()) {
+                        <span class="flex-1 truncate">{{ item.label }}</span>
+                        @if (badgeFor(item); as badge) {
+                          <span class="rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white w-5 h-5 flex items-center justify-center">{{ badge }}</span>
+                        }
+                      }
+                    </a>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </nav>
+        </div>
+        </div>
+      </aside>
+
+      <div class="min-w-0 flex-1">
+        <main class="flex-1 p-6">
           <router-outlet />
         </main>
+      </div>
       </div>
     </div>
   `
 })
 export class BaseLayoutComponent {
   private router = inject(Router);
-  private breadcrumbsService = inject(BreadcrumbService);
-  private repo = inject(SampleDataRepository);
+  private shell = inject(ShellDataService);
+  private feed = inject(NotificationFeedService);
   private roleService = inject(CurrentRoleService);
   private yearService = inject(SchoolYearService);
   private permissionsService = inject(CalendarPermissionsService);
-  private notificationFeedService = inject(NotificationFeedService);
   private contextService = inject(CurrentContextService);
 
-  readonly breadcrumbs = this.breadcrumbsService.breadcrumbs;
-  readonly header = this.repo.dashboardV2Header;
+  readonly unreadNotifications = this.feed.unreadCount;
+  readonly missingCalendarsCount = computed(() => this.shell.counts().missing);
+  readonly routingConflictsCount = this.shell.openConflictCount;
   readonly collapsed = signal(false);
 
   readonly roles = this.roleService.roles;
@@ -250,17 +260,19 @@ export class BaseLayoutComponent {
   readonly currentSchoolYear = this.yearService.current;
   readonly canCreateCalendars = this.permissionsService.canCreateCalendars;
 
-  readonly leaList = this.repo.leaList;
+  readonly leaOptions = this.contextService.leaOptions;
   readonly contextLeaId = this.contextService.leaId;
-  readonly contextSiteId = this.contextService.siteId;
-  readonly contextSites = this.contextService.sitesInLea;
+  readonly contextLea = this.contextService.currentLea;
+  readonly contextSchoolId = this.contextService.schoolId;
+  readonly contextSchool = this.contextService.currentSchool;
+  readonly contextSchools = this.contextService.schoolsInLea;
 
   onContextLeaChange(id: string): void {
     this.contextService.setLea(id);
   }
 
-  onContextSiteChange(id: string): void {
-    this.contextService.setSite(id || null);
+  onContextSchoolChange(id: string): void {
+    this.contextService.setSchool(id || null);
   }
 
   // "Historical" is the one status with a real behavioral consequence (read-only, no
@@ -282,8 +294,7 @@ export class BaseLayoutComponent {
     {
       title: 'Overview',
       items: [
-        { path: '/dashboard2', label: 'Dashboard', icon: 'fa-grip', badge: null },
-        { path: '/notifications', label: 'Notifications', icon: 'fa-bell', badge: null } // live count comes from badgeFor()
+        { path: '/dashboard2', label: 'Dashboard', icon: 'fa-grip', badge: null }
       ]
     },
     {
@@ -316,10 +327,10 @@ export class BaseLayoutComponent {
     {
       title: 'Oversight',
       items: [
-        { path: '/compliance', label: 'Compliance', icon: 'fa-circle-check', badge: 5 },
+        { path: '/compliance', label: 'Compliance', icon: 'fa-circle-check', badge: null },
         { path: '/waivers', label: 'Waivers', icon: 'fa-file-lines', badge: null },
-        { path: '/approvals', label: 'Approvals', icon: 'fa-square-check', badge: 47 },
-        { path: '/dot-routing', label: 'DOT Routing', icon: 'fa-bus', badge: 3 }
+        { path: '/approvals', label: 'Approvals', icon: 'fa-square-check', badge: null },
+        { path: '/dot-routing', label: 'DOT Routing', icon: 'fa-bus', badge: null }
       ]
     },
     {
@@ -328,11 +339,16 @@ export class BaseLayoutComponent {
     }
   ];
 
+  // Oversight badges are live counts for the current shell scope (LEA / School / School Year).
+  private readonly liveBadges = computed<Record<string, number>>(() => ({
+    '/compliance': this.shell.complianceViolations().filter((v) => v.status === 'Open').length,
+    '/approvals': this.shell.counts().underReview,
+    '/dot-routing': this.shell.openConflictCount()
+  }));
+
   badgeFor(item: INavItem): number | null {
-    if (item.path === '/notifications') {
-      const unread = this.notificationFeedService.items().filter((n) => !n.read).length;
-      return unread > 0 ? unread : null;
-    }
+    const live = this.liveBadges()[item.path];
+    if (live !== undefined) return live > 0 ? live : null;
     return item.badge;
   }
 

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@angular/animations": "17.3.12",
+    "@angular/cdk": "^17.3.10",
     "@angular/common": "17.3.12",
     "@angular/compiler": "17.3.12",
     "@angular/core": "17.3.12",
@@ -17,11 +18,11 @@
     "@angular/platform-browser": "17.3.12",
     "@angular/platform-browser-dynamic": "17.3.12",
     "@angular/router": "17.3.12",
+    "@ctrl/tinycolor": "^3.6.1",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "ag-grid-angular": "^32.2.0",
     "ag-grid-community": "^32.2.0",
-    "primeicons": "^7.0.0",
-    "primeng": "^17.18.15",
+    "ng-zorro-antd": "^17.4.1",
     "rxjs": "^7.8.1",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.10"

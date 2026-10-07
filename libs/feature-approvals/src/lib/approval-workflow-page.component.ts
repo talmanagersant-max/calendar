@@ -2,12 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellClickedEvent, ColDef } from 'ag-grid-community';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToastModule } from 'primeng/toast';
-import { ApprovalPriority, ChangeRequestStatus, IApprovalQueueRow, IChangeRequest, SampleDataRepository } from '@osse/shared/data-access';
-import { NotificationFeedService } from '@osse/shared/ui';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { ApprovalPriority, ChangeRequestStatus, IApprovalQueueRow, IChangeRequest, seeded } from '@osse/shared/data-access';
+import { ConfirmService, NotificationFeedService, ShellDataService, ToastService } from '@osse/shared/ui';
 
 const PRIORITY_CLASS: Record<ApprovalPriority, string> = {
   High: 'border-red-200 bg-red-50 text-red-700',
@@ -29,19 +26,19 @@ function complianceCellHtml(percent: number): string {
 @Component({
   selector: 'osse-approval-workflow-page',
   standalone: true,
-  imports: [AgGridAngular, ButtonModule, ToastModule, ConfirmDialogModule],
-  providers: [MessageService, ConfirmationService],
+  imports: [AgGridAngular, NzButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-toast position="top-right" />
-    <p-confirmDialog />
 
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
-        <h1 class="text-2xl font-semibold text-slate-900">Approval Workflow</h1>
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-900">Approval Workflow</h1>
+          <p class="mt-1 text-sm text-slate-500">{{ shell.scopeLabel() }} · {{ shell.year().label }}</p>
+        </div>
         <div class="flex items-center gap-2.5">
-          <button pButton type="button" [outlined]="true" severity="secondary" (click)="notify('Assign reviewer dialog would open here')">Assign Reviewer</button>
-          <button pButton type="button" [disabled]="approvalQueue().length === 0" (click)="bulkApproveAll()">Bulk Approve All</button>
+          <button nz-button nzType="default" class="btn-secondary" type="button" (click)="notify('Assign reviewer dialog would open here')">Assign Reviewer</button>
+          <button nz-button nzType="primary" type="button" [disabled]="approvalQueue().length === 0" (click)="bulkApproveAll()">Bulk Approve All</button>
         </div>
       </div>
 
@@ -51,31 +48,38 @@ function complianceCellHtml(percent: number): string {
           <div class="mt-1 text-xs text-slate-500">Pending Review</div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-4 text-center">
-          <div class="font-mono text-2xl font-semibold text-o-accent-600">{{ inReviewCount() }}</div>
-          <div class="mt-1 text-xs text-slate-500">In Review</div>
+          <div class="font-mono text-2xl font-semibold text-o-accent-600">{{ openChangeRequests() }}</div>
+          <div class="mt-1 text-xs text-slate-500">Open Change Requests</div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-4 text-center">
           <div class="font-mono text-2xl font-semibold text-emerald-600">{{ approvedTodayCount() }}</div>
           <div class="mt-1 text-xs text-slate-500">Approved Today</div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-4 text-center">
-          <div class="font-mono text-2xl font-semibold text-slate-900">3.2d</div>
-          <div class="mt-1 text-xs text-slate-500">Avg Review Time</div>
+          <div class="font-mono text-2xl font-semibold text-slate-900">{{ approvedCount() }}</div>
+          <div class="mt-1 text-xs text-slate-500">Approved ({{ shell.year().label }})</div>
         </div>
       </div>
 
       <div class="rounded-lg border border-slate-200 bg-white p-5">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="text-base font-semibold text-slate-900">Pending Approvals ({{ approvalQueue().length }})</h2>
-          <select class="rounded border border-slate-300 px-2.5 py-1 text-xs text-slate-700 outline-none focus:border-o-accent-500">
-            <option>All Reviewers</option>
+          <select
+            class="form-control-sm"
+            [value]="reviewerFilter()"
+            (change)="reviewerFilter.set($any($event.target).value)"
+          >
+            <option value="">All Reviewers</option>
+            @for (reviewer of reviewers; track reviewer) {
+              <option [value]="reviewer">{{ reviewer }}</option>
+            }
           </select>
         </div>
         <ag-grid-angular
           class="ag-theme-alpine"
           style="width: 100%;"
           domLayout="autoHeight"
-          [rowData]="approvalQueue()"
+          [rowData]="visibleQueue()"
           [columnDefs]="approvalColumnDefs"
           [defaultColDef]="defaultColDef"
           (cellClicked)="onApprovalCellClicked($event)"
@@ -101,17 +105,43 @@ function complianceCellHtml(percent: number): string {
   `
 })
 export class ApprovalWorkflowPageComponent {
-  private readonly repo = inject(SampleDataRepository);
+  readonly shell = inject(ShellDataService);
   private readonly router = inject(Router);
-  private readonly messageService = inject(MessageService);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly toast = inject(ToastService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly notificationFeed = inject(NotificationFeedService);
 
-  readonly approvalQueue = signal<IApprovalQueueRow[]>(this.repo.approvalQueue);
-  readonly changeRequests = signal<IChangeRequest[]>(this.repo.changeRequests);
+  readonly reviewers = ['J. Torres', 'M. Park', 'Unassigned'];
+  readonly reviewerFilter = signal('');
 
-  readonly inReviewCount = computed(() => this.approvalQueue().length + 8);
-  readonly approvedTodayCount = signal(6);
+  // The queue is every scoped site calendar still Under Review; approving/rejecting updates the
+  // shared calendar store, so the Dashboard, Registry and nav badges change with it.
+  readonly approvalQueue = computed<IApprovalQueueRow[]>(() =>
+    this.shell
+      .siteCalendars()
+      .filter((c) => c.status === 'Under Review')
+      .map((c) => {
+        const r = seeded(c.id + 'rev');
+        const priority: ApprovalPriority = (c.compliancePercent ?? 100) < 100 ? 'High' : r < 0.6 ? 'Normal' : 'Low';
+        return {
+          id: c.id,
+          school: c.schoolName,
+          lea: c.leaName,
+          type: c.type,
+          days: c.days ?? 0,
+          hours: c.hours ?? 0,
+          compliancePercent: c.compliancePercent ?? 0,
+          submitted: c.submittedDate ?? '—',
+          assigned: this.reviewers[Math.floor(r * 3)],
+          priority
+        };
+      })
+  );
+  readonly visibleQueue = computed(() => this.approvalQueue().filter((row) => !this.reviewerFilter() || row.assigned === this.reviewerFilter()));
+  readonly changeRequests = this.shell.changeRequests;
+  readonly openChangeRequests = computed(() => this.changeRequests().filter((cr) => cr.status !== 'Approved').length);
+  readonly approvedCount = computed(() => this.shell.counts().approved);
+  readonly approvedTodayCount = signal(0);
 
   readonly defaultColDef: ColDef = { resizable: true, sortable: true, suppressMovable: true };
 
@@ -145,7 +175,7 @@ export class ApprovalWorkflowPageComponent {
       minWidth: 190,
       sortable: false,
       cellRenderer: () =>
-        `<button type="button" data-act="approve" class="p-button p-button-sm p-button-success mr-1.5"><i class="fa-solid fa-check mr-1"></i>Approve</button><button type="button" data-act="reject" class="p-button p-button-sm p-button-danger"><i class="fa-solid fa-xmark mr-1"></i>Reject</button>`
+        `<button type="button" data-act="approve" class="ant-btn ant-btn-primary ant-btn-sm btn-success mr-1.5"><i class="fa-solid fa-check mr-1"></i>Approve</button><button type="button" data-act="reject" class="ant-btn ant-btn-primary ant-btn-sm ant-btn-dangerous"><i class="fa-solid fa-xmark mr-1"></i>Reject</button>`
     }
   ];
 
@@ -170,18 +200,17 @@ export class ApprovalWorkflowPageComponent {
       sortable: false,
       cellRenderer: (params: { data: IChangeRequest }) =>
         params.data.status === 'Approved'
-          ? `<button type="button" data-act="view" class="p-button p-button-sm p-button-text">View</button>`
-          : `<button type="button" data-act="approve" class="p-button p-button-sm p-button-success mr-1.5">Approve</button><button type="button" data-act="view" class="p-button p-button-sm p-button-text">View</button>`
+          ? `<button type="button" data-act="view" class="ant-btn ant-btn-text ant-btn-sm">View</button>`
+          : `<button type="button" data-act="approve" class="ant-btn ant-btn-primary ant-btn-sm btn-success mr-1.5">Approve</button><button type="button" data-act="view" class="ant-btn ant-btn-text ant-btn-sm">View</button>`
     }
   ];
 
   notify(message: string): void {
-    this.messageService.add({ severity: 'info', summary: message, detail: '' });
+    this.toast.add({ severity: 'info', summary: message, detail: '' });
   }
 
   private syncCalendarStatus(calendarId: string, status: 'Approved' | 'Rejected'): void {
-    const match = this.repo.calendars.find((c) => c.id === calendarId);
-    if (match) match.status = status;
+    this.shell.updateCalendars([calendarId], { status });
   }
 
   onApprovalCellClicked(event: CellClickedEvent<IApprovalQueueRow>): void {
@@ -194,38 +223,33 @@ export class ApprovalWorkflowPageComponent {
   }
 
   private approveOne(row: IApprovalQueueRow): void {
-    this.approvalQueue.update((list) => list.filter((r) => r.id !== row.id));
     this.syncCalendarStatus(row.id, 'Approved');
     this.approvedTodayCount.update((v) => v + 1);
-    this.messageService.add({ severity: 'success', summary: 'Calendar approved', detail: `${row.school}'s ${row.type} calendar (${row.id}) was approved.` });
+    this.toast.add({ severity: 'success', summary: 'Calendar approved', detail: `${row.school}'s ${row.type} calendar (${row.id}) was approved.` });
     this.notificationFeed.add({ title: 'Calendar approved', description: `${row.school}'s ${row.type} calendar was approved.`, category: 'Approval' });
   }
 
   private rejectOne(row: IApprovalQueueRow): void {
-    this.confirmationService.confirm({
+    this.confirmService.confirm({
       header: 'Reject this calendar?',
       message: `${row.school}'s ${row.type} calendar (${row.id}) will be sent back to the site as rejected.`,
       acceptLabel: 'Reject',
       rejectLabel: 'Cancel',
-      acceptIcon: 'pi pi-ban',
-      rejectIcon: 'pi pi-times',
-      acceptButtonStyleClass: 'p-button-danger',
+      danger: true,
       accept: () => {
-        this.approvalQueue.update((list) => list.filter((r) => r.id !== row.id));
         this.syncCalendarStatus(row.id, 'Rejected');
-        this.messageService.add({ severity: 'warn', summary: 'Calendar rejected', detail: `${row.school}'s ${row.type} calendar (${row.id}) was rejected.` });
+        this.toast.add({ severity: 'warn', summary: 'Calendar rejected', detail: `${row.school}'s ${row.type} calendar (${row.id}) was rejected.` });
         this.notificationFeed.add({ title: 'Calendar rejected', description: `${row.school}'s ${row.type} calendar was rejected and needs revision.`, category: 'Approval', highPriority: true });
       }
     });
   }
 
   bulkApproveAll(): void {
-    const rows = this.approvalQueue();
+    const rows = this.visibleQueue();
     const count = rows.length;
-    rows.forEach((row) => this.syncCalendarStatus(row.id, 'Approved'));
-    this.approvalQueue.set([]);
+    this.shell.updateCalendars(rows.map((row) => row.id), { status: 'Approved' });
     this.approvedTodayCount.update((v) => v + count);
-    this.messageService.add({ severity: 'success', summary: 'Bulk approve complete', detail: `${count} calendar(s) approved.` });
+    this.toast.add({ severity: 'success', summary: 'Bulk approve complete', detail: `${count} calendar(s) approved.` });
     this.notificationFeed.add({ title: 'Bulk approval complete', description: `${count} pending calendar(s) were approved in bulk.`, category: 'Approval' });
   }
 
@@ -234,12 +258,12 @@ export class ApprovalWorkflowPageComponent {
     const target = event.event?.target as HTMLElement | undefined;
     const act = target?.dataset?.['act'];
     if (act === 'approve') {
-      this.changeRequests.update((list) => list.map((cr) => (cr.id === event.data!.id ? { ...cr, status: 'Approved' as const } : cr)));
-      this.messageService.add({ severity: 'success', summary: 'Change request approved', detail: `${event.data.changeType} for ${event.data.school} was approved.` });
+      this.shell.setChangeRequestStatus(event.data.id, 'Approved');
+      this.toast.add({ severity: 'success', summary: 'Change request approved', detail: `${event.data.changeType} for ${event.data.school} was approved.` });
       this.notificationFeed.add({ title: 'Change request approved', description: `${event.data.changeType} for ${event.data.school} was approved.`, category: 'Approval' });
     }
     if (act === 'view') {
-      const hasCalendar = this.repo.calendars.some((c) => c.id === event.data!.calendarId);
+      const hasCalendar = this.shell.calendarById(event.data.calendarId) !== null;
       if (hasCalendar) this.router.navigate(['/calendar', event.data.calendarId]);
       else this.notify(`${event.data.calendarId} has no calendar record to view.`);
     }

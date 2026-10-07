@@ -9,13 +9,11 @@ export const appRoutes: Route[] = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard2' },
       {
         path: 'dashboard2',
-        loadComponent: () => import('@osse/feature-dashboard').then((m) => m.DashboardV2PageComponent),
-        data: { breadcrumb: 'Dashboard', breadcrumbKey: 'dashboard2' }
+        loadComponent: () => import('@osse/feature-dashboard').then((m) => m.DashboardV2PageComponent)
       },
       {
         path: 'notifications',
-        loadComponent: () => import('@osse/feature-notification-center').then((m) => m.NotificationCenterPageComponent),
-        data: { breadcrumb: 'Notifications', breadcrumbKey: 'notifications' }
+        loadComponent: () => import('@osse/feature-notification-center').then((m) => m.NotificationCenterPageComponent)
       },
       {
         path: 'lea',
@@ -31,28 +29,23 @@ export const appRoutes: Route[] = [
       },
       {
         path: 'compliance',
-        loadComponent: () => import('@osse/feature-compliance').then((m) => m.CompliancePageComponent),
-        data: { breadcrumb: 'Compliance', breadcrumbKey: 'compliance' }
+        loadComponent: () => import('@osse/feature-compliance').then((m) => m.CompliancePageComponent)
       },
       {
         path: 'waivers',
-        loadComponent: () => import('@osse/feature-waiver').then((m) => m.WaiverWorkflowPageComponent),
-        data: { breadcrumb: 'Waivers', breadcrumbKey: 'waivers' }
+        loadComponent: () => import('@osse/feature-waiver').then((m) => m.WaiverWorkflowPageComponent)
       },
       {
         path: 'dot-routing',
-        loadComponent: () => import('@osse/feature-dot-routing').then((m) => m.DotRoutingDashboardPageComponent),
-        data: { breadcrumb: 'DOT Routing', breadcrumbKey: 'dot-routing' }
+        loadComponent: () => import('@osse/feature-dot-routing').then((m) => m.DotRoutingDashboardPageComponent)
       },
       {
         path: 'approvals',
-        loadComponent: () => import('@osse/feature-approvals').then((m) => m.ApprovalWorkflowPageComponent),
-        data: { breadcrumb: 'Approvals', breadcrumbKey: 'approvals' }
+        loadComponent: () => import('@osse/feature-approvals').then((m) => m.ApprovalWorkflowPageComponent)
       },
       {
         path: 'reports',
-        loadComponent: () => import('@osse/feature-reports').then((m) => m.ReportsPageComponent),
-        data: { breadcrumb: 'Reports', breadcrumbKey: 'reports' }
+        loadComponent: () => import('@osse/feature-reports').then((m) => m.ReportsPageComponent)
       }
     ]
   }

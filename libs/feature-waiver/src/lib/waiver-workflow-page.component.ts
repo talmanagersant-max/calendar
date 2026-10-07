@@ -1,12 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellClickedEvent, ColDef } from 'ag-grid-community';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToastModule } from 'primeng/toast';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 import { IWaiver, WaiverStatus } from '@osse/shared/data-access';
-import { NotificationFeedService, WaiverService } from '@osse/shared/ui';
+import { ConfirmService, NotificationFeedService, ShellDataService, ToastService, WaiverService } from '@osse/shared/ui';
 
 const STATUS_CLASS: Record<WaiverStatus, string> = {
   Approved: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -20,46 +17,38 @@ const WAIVER_TYPES = ['Waiver to Reduce Instructional Time', 'Situational Distan
 @Component({
   selector: 'osse-waiver-workflow-page',
   standalone: true,
-  imports: [AgGridAngular, ButtonModule, ToastModule, ConfirmDialogModule],
-  providers: [MessageService, ConfirmationService],
+  imports: [AgGridAngular, NzButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-toast position="top-right" />
-    <p-confirmDialog />
 
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
-        <h1 class="text-2xl font-semibold text-slate-900">Waiver Management</h1>
-        <button pButton type="button" (click)="showForm.set(!showForm())">{{ showForm() ? 'Cancel' : '+ Submit Waiver' }}</button>
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-900">Waiver Management</h1>
+          <p class="mt-1 text-sm text-slate-500">{{ shell.scopeLabel() }} · {{ shell.year().label }}</p>
+        </div>
+        <button nz-button nzType="primary" type="button" (click)="showForm.set(!showForm())">{{ showForm() ? 'Cancel' : '+ Submit Waiver' }}</button>
       </div>
 
       @if (showForm()) {
-        <form class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 lg:grid-cols-4" (submit)="submitWaiver($event, schoolInput, leaInput, typeSelect)">
-          <label class="block text-sm font-medium text-slate-700">
+        <form class="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 lg:grid-cols-4" (submit)="submitWaiver($event, schoolSelect, typeSelect)">
+          <label class="block text-sm font-medium text-slate-700 lg:col-span-2">
             School
-            <input
-              #schoolInput
-              type="text"
+            <select
+              #schoolSelect
               required
-              placeholder="e.g. Wilson HS"
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
-            />
-          </label>
-          <label class="block text-sm font-medium text-slate-700">
-            LEA
-            <input
-              #leaInput
-              type="text"
-              required
-              placeholder="e.g. DCPS"
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
-            />
+              class="form-control mt-1 w-full"
+            >
+              @for (school of shell.schoolsInScope(); track school.id) {
+                <option [value]="school.id">{{ school.name }}</option>
+              }
+            </select>
           </label>
           <label class="block text-sm font-medium text-slate-700 lg:col-span-2">
             Waiver Type
             <select
               #typeSelect
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
+              class="form-control mt-1 w-full"
             >
               @for (type of waiverTypes; track type) {
                 <option [value]="type">{{ type }}</option>
@@ -67,7 +56,7 @@ const WAIVER_TYPES = ['Waiver to Reduce Instructional Time', 'Situational Distan
             </select>
           </label>
           <div class="lg:col-span-4">
-            <button pButton type="submit">Submit for Review</button>
+            <button nz-button nzType="primary" type="submit">Submit for Review</button>
           </div>
         </form>
       }
@@ -110,9 +99,10 @@ const WAIVER_TYPES = ['Waiver to Reduce Instructional Time', 'Situational Distan
   `
 })
 export class WaiverWorkflowPageComponent {
+  readonly shell = inject(ShellDataService);
   private readonly waiverService = inject(WaiverService);
-  private readonly messageService = inject(MessageService);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly toast = inject(ToastService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly notificationFeed = inject(NotificationFeedService);
 
   readonly waiverTypes = WAIVER_TYPES;
@@ -156,21 +146,21 @@ export class WaiverWorkflowPageComponent {
       cellRenderer: (params: { data: IWaiver }) =>
         params.data.status === 'Approved' || params.data.status === 'Rejected'
           ? ''
-          : `<button type="button" data-act="approve" class="p-button p-button-sm p-button-success mr-1.5">Approve</button><button type="button" data-act="reject" class="p-button p-button-sm p-button-danger">Reject</button>`
+          : `<button type="button" data-act="approve" class="ant-btn ant-btn-primary ant-btn-sm btn-success mr-1.5">Approve</button><button type="button" data-act="reject" class="ant-btn ant-btn-primary ant-btn-sm ant-btn-dangerous">Reject</button>`
     }
   ];
 
-  submitWaiver(event: SubmitEvent, schoolInput: HTMLInputElement, leaInput: HTMLInputElement, typeSelect: HTMLSelectElement): void {
+  submitWaiver(event: SubmitEvent, schoolSelect: HTMLSelectElement, typeSelect: HTMLSelectElement): void {
     event.preventDefault();
-    const school = schoolInput.value.trim();
-    const lea = leaInput.value.trim();
+    const target = this.shell.schoolsInScope().find((s) => s.id === schoolSelect.value);
     const type = typeSelect.value;
-    if (!school || !lea) return;
+    if (!target) return;
+    const school = target.name;
 
-    const waiver = this.waiverService.submit({ school, lea, type });
+    const waiver = this.waiverService.submit({ school, schoolId: target.id, type });
     this.showForm.set(false);
     (event.target as HTMLFormElement).reset();
-    this.messageService.add({ severity: 'success', summary: 'Waiver submitted', detail: `${waiver.id} for ${school} is now pending review.` });
+    this.toast.add({ severity: 'success', summary: 'Waiver submitted', detail: `${waiver.id} for ${school} is now pending review.` });
     this.notificationFeed.add({ title: 'Waiver submitted', description: `${school} submitted a ${type} waiver request.`, category: 'Compliance' });
   }
 
@@ -184,22 +174,20 @@ export class WaiverWorkflowPageComponent {
 
   private approve(waiver: IWaiver): void {
     this.waiverService.setStatus(waiver.id, 'Approved');
-    this.messageService.add({ severity: 'success', summary: 'Waiver approved', detail: `${waiver.id} for ${waiver.school} was approved.` });
+    this.toast.add({ severity: 'success', summary: 'Waiver approved', detail: `${waiver.id} for ${waiver.school} was approved.` });
     this.notificationFeed.add({ title: 'Waiver approved', description: `${waiver.school}'s ${waiver.type} waiver was approved.`, category: 'Approval' });
   }
 
   private reject(waiver: IWaiver): void {
-    this.confirmationService.confirm({
+    this.confirmService.confirm({
       header: 'Reject this waiver?',
       message: `${waiver.school}'s "${waiver.type}" waiver will be marked rejected. This can't be undone.`,
       acceptLabel: 'Reject',
       rejectLabel: 'Cancel',
-      acceptIcon: 'pi pi-ban',
-      rejectIcon: 'pi pi-times',
-      acceptButtonStyleClass: 'p-button-danger',
+      danger: true,
       accept: () => {
         this.waiverService.setStatus(waiver.id, 'Rejected', 'J. Torres');
-        this.messageService.add({ severity: 'warn', summary: 'Waiver rejected', detail: `${waiver.id} for ${waiver.school} was rejected.` });
+        this.toast.add({ severity: 'warn', summary: 'Waiver rejected', detail: `${waiver.id} for ${waiver.school} was rejected.` });
         this.notificationFeed.add({ title: 'Waiver rejected', description: `${waiver.school}'s ${waiver.type} waiver was rejected and needs revision.`, category: 'Approval', highPriority: true });
       }
     });

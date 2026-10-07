@@ -1,8 +1,9 @@
 import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { SampleDataRepository } from '@osse/shared/data-access';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { defaultRange, earlyDismissalDaysFor, holidaysForYear, parseIsoDate, yearKind, yearStart } from '@osse/shared/data-access';
+import { ShellDataService, ToastService } from '@osse/shared/ui';
 
 type DayStatus = 'instruction' | 'holiday' | 'weekend' | 'none';
 
@@ -16,19 +17,6 @@ interface ICalendarDay {
 
 const CYCLE_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const WEEKDAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = [
-  { year: 2025, month: 8, label: 'Sep' },
-  { year: 2025, month: 9, label: 'Oct' },
-  { year: 2025, month: 10, label: 'Nov' },
-  { year: 2025, month: 11, label: 'Dec' },
-  { year: 2026, month: 0, label: 'Jan' },
-  { year: 2026, month: 1, label: 'Feb' },
-  { year: 2026, month: 2, label: 'Mar' },
-  { year: 2026, month: 3, label: 'Apr' },
-  { year: 2026, month: 4, label: 'May' },
-  { year: 2026, month: 5, label: 'Jun' }
-];
-
 const DAY_STATUS_CLASS: Record<DayStatus, string> = {
   instruction: 'bg-o-accent-50 border-o-accent-100 text-slate-900',
   holiday: 'bg-red-50 border-red-100 text-red-800',
@@ -39,18 +27,19 @@ const DAY_STATUS_CLASS: Record<DayStatus, string> = {
 @Component({
   selector: 'osse-calendar-detail-page',
   standalone: true,
-  imports: [NgClass, ButtonModule, RouterLink],
+  imports: [NgClass, NzButtonModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-4">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">{{ calendar()?.schoolName }} — {{ calendar()?.type }}</h1>
+          <p class="mt-1 text-sm text-slate-500">{{ calendar()?.leaName }} · <span class="font-mono">{{ calendar()?.id }}</span></p>
         </div>
         <div class="flex items-center gap-2.5">
-          <span class="inline-flex items-center rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">{{ calendar()?.status }}</span>
-          <button pButton type="button" [outlined]="true" severity="secondary" (click)="notify('PDF downloaded')">Download PDF</button>
-          <button pButton type="button" (click)="notify('Change request submitted')">Request Change</button>
+          <span class="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">{{ calendar()?.status }}</span>
+          <button nz-button nzType="default" class="btn-secondary" type="button" (click)="notify('PDF downloaded')">Download PDF</button>
+          <button nz-button nzType="primary" type="button" (click)="notify('Change request submitted')">Request Change</button>
         </div>
       </div>
 
@@ -65,11 +54,11 @@ const DAY_STATUS_CLASS: Record<DayStatus, string> = {
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-4">
           <div class="text-xs text-slate-500">Early Dismissals</div>
-          <div class="mt-1.5 font-mono text-2xl font-semibold text-slate-900">8</div>
+          <div class="mt-1.5 font-mono text-2xl font-semibold text-slate-900">{{ earlyDismissalDays() }}</div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-4">
-          <div class="text-xs text-slate-500">PD Days</div>
-          <div class="mt-1.5 font-mono text-2xl font-semibold text-slate-900">6</div>
+          <div class="text-xs text-slate-500">Holidays &amp; Breaks</div>
+          <div class="mt-1.5 font-mono text-2xl font-semibold text-slate-900">{{ holidayCount() }}</div>
         </div>
       </div>
 
@@ -77,7 +66,7 @@ const DAY_STATUS_CLASS: Record<DayStatus, string> = {
         <div class="rounded-lg border border-slate-200 bg-white p-5">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap gap-1.5">
-              @for (month of months; track month.label; let index = $index) {
+              @for (month of months(); track month.label; let index = $index) {
                 <button
                   type="button"
                   class="rounded px-2.5 py-1.5 text-xs font-medium"
@@ -92,9 +81,9 @@ const DAY_STATUS_CLASS: Record<DayStatus, string> = {
               }
             </div>
             <div class="flex items-center gap-3 font-mono text-sm text-slate-700">
-              <button pButton type="button" [text]="true" [rounded]="true" severity="secondary" size="small" icon="fa-solid fa-chevron-left" class="!h-6 !w-6 !p-0" (click)="shiftMonth(-1)"></button>
+              <button nz-button nzType="text" nzShape="circle" type="button" nzSize="small" class="btn-secondary btn-icon-only !h-6 !w-6 !p-0" (click)="shiftMonth(-1)"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
               {{ monthLabel() }}
-              <button pButton type="button" [text]="true" [rounded]="true" severity="secondary" size="small" icon="fa-solid fa-chevron-right" class="!h-6 !w-6 !p-0" (click)="shiftMonth(1)"></button>
+              <button nz-button nzType="text" nzShape="circle" type="button" nzSize="small" class="btn-secondary btn-icon-only !h-6 !w-6 !p-0" (click)="shiftMonth(1)"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
             </div>
           </div>
 
@@ -173,9 +162,9 @@ const DAY_STATUS_CLASS: Record<DayStatus, string> = {
           <div class="rounded-lg border border-slate-200 bg-white p-4">
             <h2 class="text-sm font-semibold text-slate-900">Actions</h2>
             <div class="mt-3 flex flex-col gap-2">
-              <button pButton type="button" [outlined]="true" severity="secondary" size="small" (click)="notify('Change request submitted')">Request Change</button>
-              <button pButton type="button" [outlined]="true" severity="secondary" size="small" (click)="notify('PDF downloaded')">Download PDF</button>
-              <button pButton type="button" [text]="true" size="small" class="!justify-start" label="View Audit Log" (click)="notify('Opening audit log')"></button>
+              <button nz-button nzType="default" class="btn-secondary" type="button" nzSize="small" (click)="notify('Change request submitted')">Request Change</button>
+              <button nz-button nzType="default" class="btn-secondary" type="button" nzSize="small" (click)="notify('PDF downloaded')">Download PDF</button>
+              <button nz-button nzType="text" type="button" nzSize="small" class="!justify-start" (click)="notify('Opening audit log')">View Audit Log</button>
             </div>
           </div>
         </div>
@@ -185,35 +174,59 @@ const DAY_STATUS_CLASS: Record<DayStatus, string> = {
 })
 export class CalendarDetailPageComponent {
   private route = inject(ActivatedRoute);
-  private repo = inject(SampleDataRepository);
+  private shell = inject(ShellDataService);
+  private toast = inject(ToastService);
 
-  readonly calendar = computed(() => {
-    const id = this.route.snapshot.paramMap.get('calendarId');
-    return this.repo.calendars.find((c) => c.id === id) ?? this.repo.calendars[0];
+  readonly calendar = computed(() => this.shell.calendarById(this.route.snapshot.paramMap.get('calendarId')));
+  readonly parentCalendar = computed(() => this.shell.calendarById(this.calendar()?.parentCalendarId ?? null));
+  readonly copiedFromCalendar = computed(() => this.shell.calendarById(this.calendar()?.copiedFromId ?? null));
+
+  private readonly start = computed(() => yearStart(this.calendar()?.yearId ?? this.shell.yearId()));
+
+  // Month tabs follow the calendar's own term: Sep-Jun for a regular year, Jul-Jun for 12-Month, Jul-Aug for ESY.
+  readonly months = computed(() => {
+    const cal = this.calendar();
+    const kind = cal?.yearId && yearKind(cal.yearId) === 'ESY' ? 'ESY' : cal?.type === '12-Month' ? '12-Month' : 'SY';
+    const range = defaultRange(kind, this.start());
+    const from = parseIsoDate(range.start);
+    const to = parseIsoDate(range.end);
+    const list: { year: number; month: number; label: string }[] = [];
+    for (const d = new Date(from.getFullYear(), from.getMonth(), 1); d <= to; d.setMonth(d.getMonth() + 1)) {
+      list.push({ year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleString('en-US', { month: 'short' }) });
+    }
+    return list;
   });
 
-  readonly parentCalendar = computed(() => {
-    const parentId = this.calendar()?.parentCalendarId;
-    return parentId ? (this.repo.calendars.find((c) => c.id === parentId) ?? null) : null;
+  private readonly holidayByIso = computed(() => {
+    const map = new Map<string, string>();
+    for (const h of holidaysForYear(this.start(), '')) {
+      if (!h.start || !h.end) continue;
+      for (const d = parseIsoDate(h.start); d <= parseIsoDate(h.end); d.setDate(d.getDate() + 1)) {
+        map.set(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, h.name);
+      }
+    }
+    return map;
+  });
+  readonly holidayCount = computed(() => holidaysForYear(this.start(), '').length);
+  readonly earlyDismissalDays = computed(() => {
+    const cal = this.calendar();
+    return cal?.schoolId && cal.yearId ? earlyDismissalDaysFor(cal.schoolId, cal.yearId) : 0;
   });
 
-  readonly copiedFromCalendar = computed(() => {
-    const sourceId = this.calendar()?.copiedFromId;
-    return sourceId ? (this.repo.calendars.find((c) => c.id === sourceId) ?? null) : null;
-  });
-
-  readonly months = MONTHS;
   readonly weekdayHeaders = WEEKDAY_HEADERS;
   readonly monthIndex = signal(0);
   readonly selectedDay = signal<ICalendarDay | null>(null);
 
   readonly monthLabel = computed(() => {
-    const m = this.months[this.monthIndex()];
+    const m = this.months()[this.monthIndex()];
+    if (!m) return '';
     return `${new Date(m.year, m.month, 1).toLocaleString('en-US', { month: 'long' })} ${m.year}`;
   });
 
   readonly monthGrid = computed<ICalendarDay[]>(() => {
-    const { year, month } = this.months[this.monthIndex()];
+    const current = this.months()[this.monthIndex()];
+    if (!current) return [];
+    const { year, month } = current;
     const firstDay = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startOffset = firstDay.getDay();
@@ -227,12 +240,12 @@ export class CalendarDetailPageComponent {
     for (let date = 1; date <= daysInMonth; date++) {
       const dow = new Date(year, month, date).getDay();
       const isWeekend = dow === 0 || dow === 6;
-      const isLaborDay = year === 2025 && month === 8 && date === 1;
+      const holidayName = this.holidayByIso().get(`${year}-${month}-${date}`);
 
       if (isWeekend) {
         cells.push({ date, status: 'weekend', label: '', cycleLetter: null, inMonth: true });
-      } else if (isLaborDay) {
-        cells.push({ date, status: 'holiday', label: 'Labor Day', cycleLetter: null, inMonth: true });
+      } else if (holidayName) {
+        cells.push({ date, status: 'holiday', label: holidayName, cycleLetter: null, inMonth: true });
       } else {
         cells.push({ date, status: 'instruction', label: '', cycleLetter: CYCLE_LETTERS[cycleIndex % 6], inMonth: true });
         cycleIndex++;
@@ -248,7 +261,7 @@ export class CalendarDetailPageComponent {
 
   shiftMonth(delta: number): void {
     const next = this.monthIndex() + delta;
-    if (next >= 0 && next < this.months.length) {
+    if (next >= 0 && next < this.months().length) {
       this.monthIndex.set(next);
       this.selectedDay.set(null);
     }
@@ -259,7 +272,6 @@ export class CalendarDetailPageComponent {
   }
 
   notify(message: string): void {
-    // eslint-disable-next-line no-console
-    console.log(message);
+    this.toast.add({ severity: 'info', summary: message, detail: '' });
   }
 }

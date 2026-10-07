@@ -7,3 +7,5 @@ export * from './lib/interfaces/compliance.interface';
 export * from './lib/interfaces/dashboard-v2.interface';
 export * from './lib/interfaces/operations.interface';
 export * from './lib/repositories/sample-data.repo';
+export * from './lib/repositories/lea-directory.data';
+export * from './lib/repositories/shell-seed';

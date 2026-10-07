@@ -1,29 +1,32 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NotificationCategory } from '@osse/shared/data-access';
-import { NotificationFeedService } from '@osse/shared/ui';
+import { NotificationFeedService, ShellDataService } from '@osse/shared/ui';
 
 type ShowFilter = 'all' | 'unread';
 
 @Component({
   selector: 'osse-notification-center-page',
   standalone: true,
-  imports: [ButtonModule],
+  imports: [NzButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
-        <h1 class="text-2xl font-semibold text-slate-900">Notification Center</h1>
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-900">Notification Center</h1>
+          <p class="mt-1 text-sm text-slate-500">{{ shell.scopeLabel() }} · {{ shell.year().label }}</p>
+        </div>
         <div class="flex items-center gap-2.5">
-          <button pButton type="button" [outlined]="true" severity="secondary" (click)="markAllRead()">Mark All Read</button>
-          <button pButton type="button" [outlined]="true" severity="secondary" (click)="notify('Settings would open here')">Settings</button>
+          <button nz-button nzType="default" class="btn-secondary" type="button" (click)="markAllRead()">Mark All Read</button>
+          <button nz-button nzType="default" class="btn-secondary" type="button" (click)="notify('Settings would open here')">Settings</button>
         </div>
       </div>
 
       @if (unreadCount() > 0) {
         <div class="flex items-center justify-between rounded-lg border border-o-accent-200 bg-o-accent-50 px-4 py-2.5 text-sm text-o-accent-800">
           <span class="font-medium">{{ unreadCount() }} unread notifications</span>
-          <button pButton type="button" [text]="true" size="small" label="Mark All Read" (click)="markAllRead()"></button>
+          <button nz-button nzType="text" type="button" nzSize="small" (click)="markAllRead()">Mark All Read</button>
         </div>
       }
 
@@ -33,10 +36,10 @@ type ShowFilter = 'all' | 'unread';
             <div class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Filter by Type</div>
             <div class="space-y-1">
               <button
-                pButton
+                nz-button
+                [nzType]="(categoryFilter() !== 'all') ? 'text' : 'primary'"
                 type="button"
-                [text]="categoryFilter() !== 'all'"
-                [severity]="categoryFilter() === 'all' ? undefined : 'secondary'"
+                [class.btn-secondary]="!(categoryFilter() === 'all')"
                 class="!w-full !justify-between"
                 (click)="categoryFilter.set('all')"
               >
@@ -47,10 +50,10 @@ type ShowFilter = 'all' | 'unread';
               </button>
               @for (cat of categories; track cat) {
                 <button
-                  pButton
+                  nz-button
+                  [nzType]="(categoryFilter() !== cat) ? 'text' : 'primary'"
                   type="button"
-                  [text]="categoryFilter() !== cat"
-                  [severity]="categoryFilter() === cat ? undefined : 'secondary'"
+                  [class.btn-secondary]="!(categoryFilter() === cat)"
                   class="!w-full !justify-between"
                   (click)="categoryFilter.set(cat)"
                 >
@@ -67,23 +70,21 @@ type ShowFilter = 'all' | 'unread';
             <div class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Show</div>
             <div class="space-y-1">
               <button
-                pButton
+                nz-button
+                [nzType]="(showFilter() !== 'all') ? 'text' : 'primary'"
                 type="button"
-                [text]="showFilter() !== 'all'"
-                [severity]="showFilter() === 'all' ? undefined : 'secondary'"
+                [class.btn-secondary]="!(showFilter() === 'all')"
                 class="!w-full !justify-start"
-                label="All"
                 (click)="showFilter.set('all')"
-              ></button>
+              >All</button>
               <button
-                pButton
+                nz-button
+                [nzType]="(showFilter() !== 'unread') ? 'text' : 'primary'"
                 type="button"
-                [text]="showFilter() !== 'unread'"
-                [severity]="showFilter() === 'unread' ? undefined : 'secondary'"
+                [class.btn-secondary]="!(showFilter() === 'unread')"
                 class="!w-full !justify-start"
-                label="Unread Only"
                 (click)="showFilter.set('unread')"
-              ></button>
+              >Unread Only</button>
             </div>
           </div>
         </div>
@@ -113,9 +114,9 @@ type ShowFilter = 'all' | 'unread';
                 </div>
               </div>
               <div class="flex shrink-0 items-center gap-2">
-                <button pButton type="button" [outlined]="true" severity="secondary" size="small" label="View →" (click)="notify('Opening ' + item.title)"></button>
+                <button nz-button nzType="default" class="btn-secondary" type="button" nzSize="small" (click)="notify('Opening ' + item.title)">View →</button>
                 @if (!item.read) {
-                  <button pButton type="button" [text]="true" severity="secondary" size="small" label="Dismiss" (click)="dismiss(item.id)"></button>
+                  <button nz-button nzType="text" class="btn-secondary" type="button" nzSize="small" (click)="dismiss(item.id)">Dismiss</button>
                 }
               </div>
             </div>
@@ -126,6 +127,7 @@ type ShowFilter = 'all' | 'unread';
   `
 })
 export class NotificationCenterPageComponent {
+  readonly shell = inject(ShellDataService);
   private readonly feedService = inject(NotificationFeedService);
   readonly feed = this.feedService.items;
 

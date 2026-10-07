@@ -1,35 +1,31 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
-import { IProgram, ProgramType, SampleDataRepository } from '@osse/shared/data-access';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { IProgram, ProgramType } from '@osse/shared/data-access';
+import { ShellDataService, ToastService } from '@osse/shared/ui';
 
 interface IProgramRow extends IProgram {
   leaName: string;
   calendarCount: number;
 }
 
-let nextId = 1;
 
 @Component({
   selector: 'osse-program-list-page',
   standalone: true,
-  imports: [ButtonModule, ToastModule],
-  providers: [MessageService],
+  imports: [NzButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-toast position="top-right" />
 
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">Programs</h1>
           <p class="mt-1 text-sm text-slate-500">
-            One reusable Program calendar type per row - includes ESY and 12-Month today, plus anything created here. A new Program becomes selectable as a Calendar Type in
-            the wizard.
+            Programs run by {{ shell.lea()?.name }}. Linked calendars are counted for {{ shell.scopeLabel() }} in {{ shell.year().label }}. A new Program becomes selectable
+            as a Calendar Type in the wizard.
           </p>
         </div>
-        <button pButton type="button" (click)="showForm.set(!showForm())">{{ showForm() ? 'Cancel' : '+ New Program' }}</button>
+        <button nz-button nzType="primary" type="button" (click)="showForm.set(!showForm())">{{ showForm() ? 'Cancel' : '+ New Program' }}</button>
       </div>
 
       @if (showForm()) {
@@ -41,14 +37,14 @@ let nextId = 1;
               type="text"
               required
               placeholder="e.g. Saturday Academy"
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
+              class="form-control mt-1 w-full"
             />
           </label>
           <label class="block text-sm font-medium text-slate-700">
             Type
             <select
               #typeSelect
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
+              class="form-control mt-1 w-full"
             >
               <option value="Alternative">Alternative</option>
               <option value="ESY">ESY</option>
@@ -62,11 +58,11 @@ let nextId = 1;
               type="text"
               required
               placeholder="Who qualifies"
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
+              class="form-control mt-1 w-full"
             />
           </label>
           <div class="lg:col-span-4">
-            <button pButton type="submit">Save Program</button>
+            <button nz-button nzType="primary" type="submit">Save Program</button>
           </div>
         </form>
       }
@@ -88,19 +84,19 @@ let nextId = 1;
   `
 })
 export class ProgramListPageComponent {
-  private readonly repo = inject(SampleDataRepository);
-  private readonly messageService = inject(MessageService);
+  readonly shell = inject(ShellDataService);
+  private readonly toast = inject(ToastService);
 
   readonly showForm = signal(false);
-  private readonly programs = signal<IProgram[]>(this.repo.programs);
 
-  readonly rows = computed<IProgramRow[]>(() =>
-    this.programs().map((program) => ({
+  readonly rows = computed<IProgramRow[]>(() => {
+    const calendars = [...this.shell.scopedCalendars(), ...this.shell.esyCalendars()];
+    return this.shell.programs().map((program) => ({
       ...program,
-      leaName: this.repo.leaList.find((lea) => lea.id === program.leaId)?.name ?? program.leaId,
-      calendarCount: this.repo.calendars.filter((cal) => cal.programId === program.id).length
-    }))
-  );
+      leaName: this.shell.lea()?.name ?? '',
+      calendarCount: new Set(calendars.filter((cal) => cal.programId === program.id && cal.status !== 'Missing').map((c) => c.id)).size
+    }));
+  });
 
   addProgram(event: SubmitEvent, nameInput: HTMLInputElement, typeSelect: HTMLSelectElement, eligibilityInput: HTMLInputElement): void {
     event.preventDefault();
@@ -109,13 +105,10 @@ export class ProgramListPageComponent {
     const eligibility = eligibilityInput.value.trim();
     if (!name || !eligibility) return;
 
-    const program: IProgram = { id: `prog-custom-${nextId++}`, leaId: 'lea-dcps', name, type, eligibility };
-    // Push into the shared repo (not just this page's local signal) so the calendar
-    // wizard's Calendar Type step - which reads `repo.programs` directly - sees it too.
-    this.repo.programs.push(program);
-    this.programs.set(this.repo.programs.slice());
+    // Added to the shell store for the current LEA, so the wizard's Calendar Type step sees it too.
+    this.shell.addProgram({ name, type, eligibility });
     this.showForm.set(false);
     (event.target as HTMLFormElement).reset();
-    this.messageService.add({ severity: 'success', summary: 'Program created', detail: `${name} is now selectable as a Calendar Type in the wizard.` });
+    this.toast.add({ severity: 'success', summary: 'Program created', detail: `${name} is now selectable as a Calendar Type in the wizard.` });
   }
 }

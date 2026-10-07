@@ -13,7 +13,7 @@ html {
 
 body {
   margin: 0;
-  background: #f8fafc;
+  background: theme('colors.slate.50');
   font-family: 'Public Sans', system-ui, -apple-system, sans-serif;
 }
 
@@ -21,7 +21,7 @@ body {
    independent of any bespoke "selected card" styling layered on top per-component. */
 input[type='radio'],
 input[type='checkbox'] {
-  accent-color: #2a84b1; /* o.primary.500 */
+  accent-color: theme('colors.o.primary.500');
 }
 
 @keyframes fadeSlideIn {
@@ -55,467 +55,383 @@ input[type='checkbox'] {
 }
 
 .ag-theme-alpine {
-  --ag-header-background-color: #f8fafc;
-  --ag-header-foreground-color: #0f172a;
-  --ag-odd-row-background-color: #ffffff;
-  --ag-even-row-background-color: #ffffff;
-  --ag-border-color: #e2e8f0;
+  --ag-header-background-color: theme('colors.slate.50');
+  --ag-header-foreground-color: theme('colors.slate.900');
+  --ag-odd-row-background-color: theme('colors.white');
+  --ag-even-row-background-color: theme('colors.white');
+  --ag-border-color: theme('colors.slate.200');
   --ag-row-height: 44px;
   --ag-font-size: 13px;
   --ag-font-family: 'Public Sans', system-ui, sans-serif;
 }
 
 /* =========================================================================
-   Button system (PrimeNG `pButton` only - see /apps/osse-calendar button
-   convention doc in the design notes). One severity per semantic purpose,
-   each mapped onto the app's own tailwind.config.js palette rather than
-   PrimeNG's stock theme colors. Every page must use `pButton` (or matching
-   ag-grid cell-renderer markup, since ag-grid cells render outside Angular
-   and can't host directives - those reuse these exact class names so they
-   stay visually identical to real p-button elements).
+   Button system - ng-zorro `nz-button`. ng-zorro's own button stylesheet is
+   intentionally NOT loaded; every color below comes from tailwind.config.js
+   via @apply, so the framework can't override the app palette. ag-grid cell
+   renderers (plain HTML strings, no Angular directives) reuse these exact
+   class names so they look identical to real nz-button elements.
 
-   Severity -> purpose:
-     (default)  primary CTA           - o.primary  (brand teal, #006085)
-     secondary  secondary/neutral action - slate
-     success    approve / positive      - emerald
-     info       informational / view    - o.accent  (secondary blue)
-     warning    reminder / needs-attention - amber
-     danger     destructive / reject     - o.secondary (brand rose, #BC2444)
-     help       special emphasis         - violet
-     contrast   max-emphasis on light bg - slate-900
+   Variant (nzType):
+     primary  -> solid            (class .ant-btn-primary)
+     default  -> outlined         (class .ant-btn / .ant-btn-default)
+     text     -> text-only        (class .ant-btn-text)
 
-   Variants: solid (default), [outlined]="true", [text]="true".
-   Sizes: default, [size]="'small'" (-> .p-button-sm), [size]="'large'".
+   Tone (extra class; default tone is o.primary):
+     btn-secondary  secondary/neutral action  - slate
+     btn-success    approve / positive        - emerald
+     btn-info       informational / view      - o.accent
+     btn-warning    reminder / needs attention - amber
+     nzDanger       destructive / reject      - o.secondary (.ant-btn-dangerous)
+     btn-help       special emphasis          - violet
+     btn-contrast   max emphasis on light bg  - slate-900
+
+   Sizes: nzSize="small" (.ant-btn-sm), nzSize="large" (.ant-btn-lg).
+   Icon-only buttons add .btn-icon-only (Font Awesome icons aren't detected
+   by ng-zorro's own icon-only check).
    ========================================================================= */
-.p-button {
-  font-family: 'Public Sans', system-ui, sans-serif;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  padding: 0.5rem 0.875rem;
-  border-radius: 4px;
-  border-width: 1px;
-  border-style: solid;
-  gap: 0.4rem;
-  cursor: pointer;
-  line-height: 1.2;
-  align-self: center;
-  vertical-align: middle;
+.ant-btn {
+  @apply inline-flex cursor-pointer select-none items-center justify-center gap-1.5 self-center whitespace-nowrap rounded border border-solid px-3.5 py-2 align-middle text-[0.8125rem] font-medium leading-tight transition-colors;
 }
-.p-button.p-button-sm {
-  font-size: 0.75rem;
-  padding: 0.35rem 0.625rem;
+.ant-btn:focus-visible {
+  @apply outline-none ring-2 ring-o-primary-600/40 ring-offset-2 ring-offset-white;
 }
-.p-button.p-button-lg {
-  font-size: 0.9375rem;
-  padding: 0.625rem 1.125rem;
+.ant-btn.ant-btn-sm {
+  @apply px-2.5 py-1.5 text-xs;
 }
-.p-button.p-button-icon-only {
-  padding: 0.5rem;
-  width: 2.25rem;
+.ant-btn.ant-btn-lg {
+  @apply px-[1.125rem] py-2.5 text-[0.9375rem];
 }
-.p-button:focus {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px rgba(0, 96, 133, 0.35);
+.ant-btn.btn-icon-only {
+  @apply h-9 w-9 p-0;
+}
+.ant-btn.ant-btn-sm.btn-icon-only {
+  @apply h-7 w-7;
+}
+.ant-btn.ant-btn-round,
+.ant-btn.ant-btn-circle {
+  @apply rounded-full;
+}
+.ant-btn:disabled {
+  @apply cursor-not-allowed opacity-50;
 }
 
-/* --- primary (default) : o.primary --------------------------------------- */
-.p-button,
-.p-button.p-button-primary {
-  background: #006085;
-  border-color: #006085;
-  color: #ffffff;
+/* --- primary (default tone) : o.primary --- */
+.ant-btn {
+  @apply border-o-primary-200 bg-white text-o-primary-600;
 }
-.p-button:enabled:hover,
-.p-button.p-button-primary:enabled:hover {
-  background: #004c6a;
-  border-color: #004c6a;
+.ant-btn:not(:disabled):hover {
+  @apply border-o-primary-300 bg-o-primary-50;
 }
-.p-button.p-button-outlined,
-.p-button.p-button-outlined.p-button-primary {
-  background: #ffffff;
-  color: #006085;
-  border-color: #a3cce0;
+.ant-btn.ant-btn-primary {
+  @apply border-o-primary-600 bg-o-primary-600 text-white;
 }
-.p-button.p-button-outlined:enabled:hover,
-.p-button.p-button-outlined.p-button-primary:enabled:hover {
-  background: #e6f2f7;
-  border-color: #77b4d0;
+.ant-btn.ant-btn-primary:not(:disabled):hover {
+  @apply border-o-primary-700 bg-o-primary-700;
 }
-.p-button.p-button-text,
-.p-button.p-button-text.p-button-primary {
-  background: transparent;
-  border-color: transparent;
-  color: #006085;
+.ant-btn.ant-btn-text {
+  @apply border-transparent bg-transparent text-o-primary-600;
 }
-.p-button.p-button-text:enabled:hover,
-.p-button.p-button-text.p-button-primary:enabled:hover {
-  background: #e6f2f7;
+.ant-btn.ant-btn-text:not(:disabled):hover {
+  @apply bg-o-primary-50;
 }
-
-/* --- secondary : slate --------------------------------------------------- */
-.p-button.p-button-secondary {
-  background: #475569;
-  border-color: #475569;
-  color: #ffffff;
+/* --- secondary --- */
+.ant-btn.btn-secondary {
+  @apply border-slate-300 bg-white text-slate-700;
 }
-.p-button.p-button-secondary:enabled:hover {
-  background: #334155;
-  border-color: #334155;
+.ant-btn.btn-secondary:not(:disabled):hover {
+  @apply border-slate-400 bg-slate-50;
 }
-.p-button.p-button-outlined.p-button-secondary {
-  background: #ffffff;
-  color: #334155;
-  border-color: #cbd5e1;
+.ant-btn.ant-btn-primary.btn-secondary {
+  @apply border-slate-600 bg-slate-600 text-white;
 }
-.p-button.p-button-outlined.p-button-secondary:enabled:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
+.ant-btn.ant-btn-primary.btn-secondary:not(:disabled):hover {
+  @apply border-slate-700 bg-slate-700;
 }
-.p-button.p-button-text.p-button-secondary {
-  background: transparent;
-  border-color: transparent;
-  color: #334155;
+.ant-btn.ant-btn-text.btn-secondary {
+  @apply border-transparent bg-transparent text-slate-700;
 }
-.p-button.p-button-text.p-button-secondary:enabled:hover {
-  background: #f1f5f9;
+.ant-btn.ant-btn-text.btn-secondary:not(:disabled):hover {
+  @apply bg-slate-100;
 }
-
-/* --- success : emerald ---------------------------------------------------- */
-.p-button.p-button-success {
-  background: #059669;
-  border-color: #059669;
-  color: #ffffff;
+/* --- success --- */
+.ant-btn.btn-success {
+  @apply border-emerald-200 bg-white text-emerald-700;
 }
-.p-button.p-button-success:enabled:hover {
-  background: #047857;
-  border-color: #047857;
+.ant-btn.btn-success:not(:disabled):hover {
+  @apply border-emerald-300 bg-emerald-50;
 }
-.p-button.p-button-outlined.p-button-success {
-  background: #ffffff;
-  color: #047857;
-  border-color: #a7f3d0;
+.ant-btn.ant-btn-primary.btn-success {
+  @apply border-emerald-600 bg-emerald-600 text-white;
 }
-.p-button.p-button-outlined.p-button-success:enabled:hover {
-  background: #ecfdf5;
-  border-color: #6ee7b7;
+.ant-btn.ant-btn-primary.btn-success:not(:disabled):hover {
+  @apply border-emerald-700 bg-emerald-700;
 }
-.p-button.p-button-text.p-button-success {
-  background: transparent;
-  border-color: transparent;
-  color: #047857;
+.ant-btn.ant-btn-text.btn-success {
+  @apply border-transparent bg-transparent text-emerald-700;
 }
-.p-button.p-button-text.p-button-success:enabled:hover {
-  background: #ecfdf5;
+.ant-btn.ant-btn-text.btn-success:not(:disabled):hover {
+  @apply bg-emerald-50;
 }
-
-/* --- info : o.accent (secondary blue) -------------------------------------- */
-.p-button.p-button-info {
-  background: #1447e6;
-  border-color: #1447e6;
-  color: #ffffff;
+/* --- info --- */
+.ant-btn.btn-info {
+  @apply border-o-accent-200 bg-white text-o-accent-600;
 }
-.p-button.p-button-info:enabled:hover {
-  background: #0f37bd;
-  border-color: #0f37bd;
+.ant-btn.btn-info:not(:disabled):hover {
+  @apply border-o-accent-300 bg-o-accent-50;
 }
-.p-button.p-button-outlined.p-button-info {
-  background: #ffffff;
-  color: #1447e6;
-  border-color: #bfd3fe;
+.ant-btn.ant-btn-primary.btn-info {
+  @apply border-o-accent-600 bg-o-accent-600 text-white;
 }
-.p-button.p-button-outlined.p-button-info:enabled:hover {
-  background: #eef4ff;
-  border-color: #93b4fd;
+.ant-btn.ant-btn-primary.btn-info:not(:disabled):hover {
+  @apply border-o-accent-700 bg-o-accent-700;
 }
-.p-button.p-button-text.p-button-info {
-  background: transparent;
-  border-color: transparent;
-  color: #006085;
+.ant-btn.ant-btn-text.btn-info {
+  @apply border-transparent bg-transparent text-o-accent-600;
 }
-.p-button.p-button-text.p-button-info:enabled:hover {
-  background: #eef4ff;
+.ant-btn.ant-btn-text.btn-info:not(:disabled):hover {
+  @apply bg-o-accent-50;
 }
-
-/* --- warning : amber -------------------------------------------------------- */
-.p-button.p-button-warning {
-  background: #d97706;
-  border-color: #d97706;
-  color: #ffffff;
+/* --- warning --- */
+.ant-btn.btn-warning {
+  @apply border-amber-200 bg-white text-amber-700;
 }
-.p-button.p-button-warning:enabled:hover {
-  background: #b45309;
-  border-color: #b45309;
+.ant-btn.btn-warning:not(:disabled):hover {
+  @apply border-amber-300 bg-amber-50;
 }
-.p-button.p-button-outlined.p-button-warning {
-  background: #ffffff;
-  color: #b45309;
-  border-color: #fde68a;
+.ant-btn.ant-btn-primary.btn-warning {
+  @apply border-amber-600 bg-amber-600 text-white;
 }
-.p-button.p-button-outlined.p-button-warning:enabled:hover {
-  background: #fffbeb;
-  border-color: #fcd34d;
+.ant-btn.ant-btn-primary.btn-warning:not(:disabled):hover {
+  @apply border-amber-700 bg-amber-700;
 }
-.p-button.p-button-text.p-button-warning {
-  background: transparent;
-  border-color: transparent;
-  color: #b45309;
+.ant-btn.ant-btn-text.btn-warning {
+  @apply border-transparent bg-transparent text-amber-700;
 }
-.p-button.p-button-text.p-button-warning:enabled:hover {
-  background: #fffbeb;
+.ant-btn.ant-btn-text.btn-warning:not(:disabled):hover {
+  @apply bg-amber-50;
 }
-
-/* --- danger : o.secondary (brand rose, #BC2444) ----------------------------- */
-.p-button.p-button-danger {
-  background: #bc2444;
-  border-color: #bc2444;
-  color: #ffffff;
+/* --- help --- */
+.ant-btn.btn-help {
+  @apply border-violet-200 bg-white text-violet-700;
 }
-.p-button.p-button-danger:enabled:hover {
-  background: #8d1a34;
-  border-color: #8d1a34;
+.ant-btn.btn-help:not(:disabled):hover {
+  @apply border-violet-300 bg-violet-50;
 }
-.p-button.p-button-outlined.p-button-danger {
-  background: #ffffff;
-  color: #8d1a34;
-  border-color: #f4afbf;
+.ant-btn.ant-btn-primary.btn-help {
+  @apply border-violet-600 bg-violet-600 text-white;
 }
-.p-button.p-button-outlined.p-button-danger:enabled:hover {
-  background: #fdecef;
-  border-color: #ee87a1;
+.ant-btn.ant-btn-primary.btn-help:not(:disabled):hover {
+  @apply border-violet-700 bg-violet-700;
 }
-.p-button.p-button-text.p-button-danger {
-  background: transparent;
-  border-color: transparent;
-  color: #8d1a34;
+.ant-btn.ant-btn-text.btn-help {
+  @apply border-transparent bg-transparent text-violet-700;
 }
-.p-button.p-button-text.p-button-danger:enabled:hover {
-  background: #fdecef;
+.ant-btn.ant-btn-text.btn-help:not(:disabled):hover {
+  @apply bg-violet-50;
 }
-
-/* --- help : violet (special emphasis, distinct from primary/danger) -------- */
-.p-button.p-button-help {
-  background: #7c3aed;
-  border-color: #7c3aed;
-  color: #ffffff;
+/* --- contrast --- */
+.ant-btn.btn-contrast {
+  @apply border-slate-400 bg-white text-slate-900;
 }
-.p-button.p-button-help:enabled:hover {
-  background: #6d28d9;
-  border-color: #6d28d9;
+.ant-btn.btn-contrast:not(:disabled):hover {
+  @apply border-slate-400 bg-slate-100;
 }
-.p-button.p-button-outlined.p-button-help {
-  background: #ffffff;
-  color: #6d28d9;
-  border-color: #ddd6fe;
+.ant-btn.ant-btn-primary.btn-contrast {
+  @apply border-slate-900 bg-slate-900 text-white;
 }
-.p-button.p-button-outlined.p-button-help:enabled:hover {
-  background: #f5f3ff;
-  border-color: #c4b5fd;
+.ant-btn.ant-btn-primary.btn-contrast:not(:disabled):hover {
+  @apply border-black bg-black;
 }
-.p-button.p-button-text.p-button-help {
-  background: transparent;
-  border-color: transparent;
-  color: #6d28d9;
+.ant-btn.ant-btn-text.btn-contrast {
+  @apply border-transparent bg-transparent text-slate-900;
 }
-.p-button.p-button-text.p-button-help:enabled:hover {
-  background: #f5f3ff;
+.ant-btn.ant-btn-text.btn-contrast:not(:disabled):hover {
+  @apply bg-slate-100;
 }
-
-/* --- contrast : slate-900 (max emphasis on light surfaces) ----------------- */
-.p-button.p-button-contrast {
-  background: #0f172a;
-  border-color: #0f172a;
-  color: #ffffff;
+/* --- danger (nzDanger) : o.secondary --- */
+.ant-btn.ant-btn-dangerous {
+  @apply border-o-secondary-200 bg-white text-o-secondary-700;
 }
-.p-button.p-button-contrast:enabled:hover {
-  background: #000000;
-  border-color: #000000;
+.ant-btn.ant-btn-dangerous:not(:disabled):hover {
+  @apply border-o-secondary-300 bg-o-secondary-50;
 }
-.p-button.p-button-outlined.p-button-contrast {
-  background: #ffffff;
-  color: #0f172a;
-  border-color: #94a3b8;
+.ant-btn.ant-btn-primary.ant-btn-dangerous {
+  @apply border-o-secondary-600 bg-o-secondary-600 text-white;
 }
-.p-button.p-button-outlined.p-button-contrast:enabled:hover {
-  background: #f1f5f9;
+.ant-btn.ant-btn-primary.ant-btn-dangerous:not(:disabled):hover {
+  @apply border-o-secondary-700 bg-o-secondary-700;
 }
-.p-button.p-button-text.p-button-contrast {
-  background: transparent;
-  border-color: transparent;
-  color: #0f172a;
+.ant-btn.ant-btn-text.ant-btn-dangerous {
+  @apply border-transparent bg-transparent text-o-secondary-700;
 }
-.p-button.p-button-text.p-button-contrast:enabled:hover {
-  background: #f1f5f9;
-}
-
-.p-button:disabled,
-.p-button.p-disabled {
-  opacity: 0.5;
+.ant-btn.ant-btn-text.ant-btn-dangerous:not(:disabled):hover {
+  @apply bg-o-secondary-50;
 }
 
 /* =========================================================================
-   PrimeNG form controls (p-dropdown, p-calendar, p-checkbox, p-radioButton).
-   Tailwind's preflight (`*, ::before, ::after { border-width: 0 }`) compiles
-   as plain unlayered CSS, while PrimeNG's theme rules live inside
-   `@layer primeng`. Per the CSS Cascade Layers spec, ANY unlayered
-   declaration beats ANY layered one regardless of selector specificity or
-   file order - so PrimeNG's own borders get silently zeroed everywhere.
-   Re-declared here (also unlayered, so it wins the same way) to restore
-   them, matching the app's existing field styling (rounded, border-slate-
-   300, o-primary focus ring) instead of just reinstating PrimeNG's own
-   look.
+   Progress (nz-progress). Only ng-zorro's structural progress CSS is loaded;
+   track and fill colors are re-declared here from the Tailwind palette.
+   Tone is set with a `tone-*` class on the <nz-progress> host.
    ========================================================================= */
-.p-dropdown {
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
+nz-progress .ant-progress-inner {
+  @apply rounded-full bg-slate-200;
 }
-.p-dropdown:not(.p-disabled).p-focus {
-  border-color: #006085;
-  box-shadow: 0 0 0 2px rgba(0, 96, 133, 0.25);
+nz-progress .ant-progress-outer .ant-progress-inner .ant-progress-bg {
+  @apply h-2 rounded-full bg-o-primary-600;
 }
-.p-inputtext {
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
+.tone-accent .ant-progress-outer .ant-progress-inner .ant-progress-bg {
+  @apply bg-o-accent-600;
 }
-.p-inputtext:enabled:focus {
-  outline: 0 none;
-  border-color: #006085;
-  box-shadow: 0 0 0 2px rgba(0, 96, 133, 0.25);
+.tone-success .ant-progress-outer .ant-progress-inner .ant-progress-bg {
+  @apply bg-green-600;
 }
-/* p-calendar's text input and its trigger button sit side by side (inline-flex,
-   no gap) - flatten the touching corners so they read as one joined control
-   instead of two disconnected pieces. */
-.p-calendar .p-inputtext {
-  border-right: 0;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+.tone-danger .ant-progress-outer .ant-progress-inner .ant-progress-bg {
+  @apply bg-red-600;
 }
-.p-calendar .p-datepicker-trigger {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-.p-datepicker {
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-}
-.p-checkbox .p-checkbox-box {
-  border: 2px solid #cbd5e1;
-  border-radius: 4px;
-}
-.p-checkbox .p-checkbox-box.p-highlight {
-  border-color: #006085;
-  background: #006085;
-}
-.p-checkbox .p-checkbox-box:not(.p-disabled).p-focus {
-  box-shadow: 0 0 0 2px rgba(0, 96, 133, 0.25);
-}
-.p-radiobutton .p-radiobutton-box {
-  border: 2px solid #cbd5e1;
-}
-.p-radiobutton .p-radiobutton-box.p-highlight {
-  border-color: #006085;
-  background: #006085;
-}
-.p-radiobutton .p-radiobutton-box:not(.p-disabled).p-focus {
-  box-shadow: 0 0 0 2px rgba(0, 96, 133, 0.25);
-}
-
-.p-progressbar {
-  background: #e2e8f0;
-  border-radius: 9999px;
-  height: 0.5rem;
-}
-.p-progressbar .p-progressbar-label {
-  display: none;
-}
-.tone-accent .p-progressbar-value {
-  background: #1447e6;
-}
-.tone-success .p-progressbar-value {
-  background: #16a34a;
-}
-.tone-danger .p-progressbar-value {
-  background: #dc2626;
-}
-.tone-warning .p-progressbar-value {
-  background: #d97706;
+.tone-warning .ant-progress-outer .ant-progress-inner .ant-progress-bg {
+  @apply bg-amber-600;
 }
 
 /* =========================================================================
-   Toast notifications (p-toast) - banner-style callouts: a tinted background,
-   a colored left accent bar, and a solid dark icon badge (the badge itself
-   stays neutral black/white across all severities - only the bar and tint
-   carry the severity color). Colors reuse the same severity mapping as the
-   button system (info -> o.accent, warning -> amber, success -> emerald,
-   error -> o.secondary) for consistency across the app.
+   Toasts (ToastService -> NzNotificationService). Banner-style callouts: a
+   tinted background, a colored left accent bar, and a solid dark icon badge
+   (neutral across severities - only the bar and tint carry the severity).
+   Severity colors match the button tones (info -> o.primary bar on o.accent
+   tint, warning -> amber, success -> emerald, error -> o.secondary).
    ========================================================================= */
-.p-toast {
-  width: 25rem;
+.ant-notification {
+  @apply text-o-ink-900;
 }
-.p-toast-message {
-  margin: 0 0 0.75rem 0;
-  border-radius: 0;
-  border-left-width: 5px;
-  border-left-style: solid;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
-  overflow: hidden;
+.app-toast.ant-notification-notice {
+  @apply w-[25rem] max-w-[calc(100vw-2rem)] rounded-none border-0 border-l-[5px] border-solid px-[1.125rem] py-4 shadow-lg;
 }
-.p-toast-message-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem 1.125rem;
+.app-toast .ant-notification-notice-icon {
+  @apply ml-0 flex h-7 w-7 items-center justify-center rounded-full bg-o-ink-900 text-[0.8rem] leading-none text-white;
 }
-.p-toast-message-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin: 0;
-  border-radius: 9999px;
-  background: #1a1a1a;
-  color: #ffffff;
+.app-toast .ant-notification-notice-with-icon .ant-notification-notice-message {
+  @apply mb-0 ml-10 pr-6 text-[0.9375rem] font-bold text-o-ink-900;
 }
-.p-toast-message-icon svg {
-  width: 0.8rem;
-  height: 0.8rem;
+.app-toast .ant-notification-notice-with-icon .ant-notification-notice-description {
+  @apply ml-10 mt-1 text-[0.8125rem] text-o-ink-800;
 }
-.p-toast-message-text {
-  margin: 0;
+.app-toast .ant-notification-notice-close {
+  @apply text-o-gray-800 hover:text-o-ink-900;
 }
-.p-toast-summary {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: #1a1a1a;
+.app-toast-info.ant-notification-notice {
+  @apply border-l-o-primary-600 bg-o-accent-50;
 }
-.p-toast-detail {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.8125rem;
-  font-weight: 400;
-  color: #333333;
+.app-toast-warning.ant-notification-notice {
+  @apply border-l-amber-600 bg-amber-50;
 }
-.p-toast-icon-close {
-  flex-shrink: 0;
-  color: #565656;
+.app-toast-success.ant-notification-notice {
+  @apply border-l-emerald-600 bg-emerald-50;
 }
-.p-toast-icon-close:hover {
-  color: #1a1a1a;
+.app-toast-error.ant-notification-notice {
+  @apply border-l-o-secondary-600 bg-o-secondary-50;
 }
 
-.p-toast-message-info {
-  background: #eef4ff;
-  border-left-color: #006085;
+/* =========================================================================
+   Confirm dialogs (ConfirmService -> NzModalService.confirm). The footer
+   buttons are nz-buttons, so they pick up the button system above; the
+   cancel button is shown in the secondary tone.
+   ========================================================================= */
+.ant-modal-mask {
+  @apply bg-o-ink-900/50;
 }
-.p-toast-message-warn {
-  background: #fffbeb;
-  border-left-color: #d97706;
+.app-confirm .ant-modal-content {
+  @apply rounded-lg bg-white shadow-xl;
 }
-.p-toast-message-success {
-  background: #ecfdf5;
-  border-left-color: #059669;
+.app-confirm .ant-modal-confirm-body .ant-modal-confirm-title {
+  @apply text-base font-bold text-o-ink-900;
 }
-.p-toast-message-error {
-  background: #fdecef;
-  border-left-color: #bc2444;
+.app-confirm .ant-modal-confirm-body .ant-modal-confirm-content {
+  @apply text-sm text-o-ink-700;
+}
+.app-confirm .ant-modal-confirm-body > .anticon {
+  @apply text-amber-600;
+}
+.app-confirm.app-confirm-danger .ant-modal-confirm-body > .anticon {
+  @apply text-o-secondary-600;
+}
+.app-confirm .ant-modal-confirm-btns {
+  @apply flex justify-end gap-2;
+}
+.app-confirm .ant-modal-confirm-btns .ant-btn + .ant-btn {
+  @apply ml-0;
+}
+.app-confirm .ant-modal-confirm-btns .ant-btn:not(.ant-btn-primary) {
+  @apply border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50;
+}
+
+/* =========================================================================
+   Always-visible thin scrollbar for small scroll boxes. macOS overlay
+   scrollbars otherwise stay hidden until you scroll, so the box doesn't read
+   as scrollable. Styling ::-webkit-scrollbar keeps it visible in Chrome,
+   Edge and Safari; Firefox gets a thin scrollbar via scrollbar-width.
+   ========================================================================= */
+.scrollbar-visible {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.slate.300') transparent;
+}
+.scrollbar-visible::-webkit-scrollbar {
+  @apply w-1.5;
+}
+.scrollbar-visible::-webkit-scrollbar-track {
+  @apply rounded-full bg-slate-100;
+}
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-300;
+}
+.scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
+
+/* =========================================================================
+   Form controls - the ONE place text inputs, selects and textareas are styled.
+   Mirrors the selectable radio cards (e.g. Calendar Type): 2px border,
+   rounded-lg, 44px tall, o-primary hover/focus. Templates add only layout
+   utilities (width / margin), never borders, padding, colors or heights.
+
+     <input class="form-control w-full" />
+     <select class="form-control mt-1 w-full">...</select>
+     <input class="form-control-sm w-full" />   dense panels / popovers (36px)
+
+   In @layer components so layout utilities (w-72, mt-2...) still apply.
+   See components.md > "Form Controls".
+   ========================================================================= */
+@layer components {
+  .form-control,
+  .form-control-sm {
+    @apply h-11 rounded-lg border-2 border-solid border-slate-300 bg-white px-3 text-sm text-o-ink-800 outline-none transition-colors placeholder:text-o-ink-500;
+  }
+  .form-control-sm {
+    @apply h-9 px-2.5;
+  }
+  textarea.form-control {
+    @apply h-auto min-h-[5.5rem] py-2.5;
+  }
+  .form-control:hover:not(:disabled):not(:focus),
+  .form-control-sm:hover:not(:disabled):not(:focus) {
+    @apply border-o-primary-300;
+  }
+  /* Focused field reads like a selected radio card: primary border + tint. */
+  .form-control:focus,
+  .form-control-sm:focus {
+    @apply border-o-primary-500 bg-o-primary-50 ring-2 ring-o-primary-500/20;
+  }
+  .form-control:disabled,
+  .form-control-sm:disabled {
+    @apply cursor-not-allowed border-slate-200 bg-slate-50 text-o-ink-500;
+  }
+  /* Same chevron in every browser (native select arrows differ); drawn with
+     currentColor gradients so no hardcoded color is needed. */
+  select.form-control,
+  select.form-control-sm {
+    @apply cursor-pointer appearance-none pr-9;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
 }

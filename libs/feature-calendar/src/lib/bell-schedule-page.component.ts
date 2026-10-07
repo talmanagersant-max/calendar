@@ -1,33 +1,37 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ColDef } from 'ag-grid-community';
-import { ButtonModule } from 'primeng/button';
-import { IBellSchedule, SampleDataRepository } from '@osse/shared/data-access';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { IBellSchedule } from '@osse/shared/data-access';
+import { ShellDataService } from '@osse/shared/ui';
 
 @Component({
   selector: 'osse-bell-schedule-page',
   standalone: true,
-  imports: [AgGridAngular, ButtonModule],
+  imports: [AgGridAngular, NzButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
-        <h1 class="text-2xl font-semibold text-slate-900">Bell Schedules</h1>
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-900">Bell Schedules</h1>
+          <p class="mt-1 text-sm text-slate-500">"Schools Using" counts schools in {{ shell.scopeLabel() }}</p>
+        </div>
         <div class="flex items-center gap-2.5">
-          <button pButton type="button" [outlined]="true" severity="secondary" (click)="notify('Template imported')">Import Template</button>
-          <button pButton type="button" (click)="notify('New schedule form would open here')">+ New Schedule</button>
+          <button nz-button nzType="default" class="btn-secondary" type="button" (click)="notify('Template imported')">Import Template</button>
+          <button nz-button nzType="primary" type="button" (click)="notify('New schedule form would open here')">+ New Schedule</button>
         </div>
       </div>
 
       <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <ag-grid-angular class="ag-theme-alpine" style="width: 100%;" domLayout="autoHeight" [rowData]="bellSchedules" [columnDefs]="columnDefs" [defaultColDef]="defaultColDef" />
+        <ag-grid-angular class="ag-theme-alpine" style="width: 100%;" domLayout="autoHeight" [rowData]="bellSchedules()" [columnDefs]="columnDefs" [defaultColDef]="defaultColDef" />
       </div>
     </div>
   `
 })
 export class BellSchedulePageComponent {
-  private repo = inject(SampleDataRepository);
-  readonly bellSchedules = this.repo.bellSchedules;
+  readonly shell = inject(ShellDataService);
+  readonly bellSchedules = this.shell.bellSchedules;
 
   readonly defaultColDef: ColDef = { resizable: true, sortable: true, suppressMovable: true };
 
@@ -59,7 +63,7 @@ export class BellSchedulePageComponent {
       minWidth: 140,
       sortable: false,
       cellRenderer: () =>
-        `<button type="button" class="p-button p-button-sm p-button-outlined p-button-secondary mr-1.5">Edit</button><button type="button" class="p-button p-button-sm p-button-text">Duplicate</button>`
+        `<button type="button" class="ant-btn ant-btn-default ant-btn-sm btn-secondary mr-1.5">Edit</button><button type="button" class="ant-btn ant-btn-text ant-btn-sm">Duplicate</button>`
     }
   ];
 

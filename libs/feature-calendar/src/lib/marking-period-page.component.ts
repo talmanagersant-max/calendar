@@ -1,11 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellClickedEvent, ColDef } from 'ag-grid-community';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToastModule } from 'primeng/toast';
-import { IMarkingPeriod, MarkingPeriodType, SampleDataRepository } from '@osse/shared/data-access';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { IMarkingPeriod, MarkingPeriodType } from '@osse/shared/data-access';
+import { ConfirmService, ShellDataService, ToastService } from '@osse/shared/ui';
 
 interface IMarkingPeriodRow extends IMarkingPeriod {
   calendarName: string;
@@ -16,20 +14,17 @@ let nextId = 1;
 @Component({
   selector: 'osse-marking-period-page',
   standalone: true,
-  imports: [AgGridAngular, ButtonModule, ToastModule, ConfirmDialogModule],
-  providers: [MessageService, ConfirmationService],
+  imports: [AgGridAngular, NzButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-toast position="top-right" />
-    <p-confirmDialog />
 
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
         <div>
           <h1 class="text-2xl font-semibold text-slate-900">Marking Periods</h1>
-          <p class="mt-1 text-sm text-slate-500">Semesters, quarters, and trimesters attached to a calendar.</p>
+          <p class="mt-1 text-sm text-slate-500">Semesters, quarters, and trimesters attached to {{ shell.scopeLabel() }} calendars · {{ shell.year().label }}</p>
         </div>
-        <button pButton type="button" (click)="showForm.set(!showForm())">{{ showForm() ? 'Cancel' : '+ Add Marking Period' }}</button>
+        <button nz-button nzType="primary" type="button" (click)="showForm.set(!showForm())">{{ showForm() ? 'Cancel' : '+ Add Marking Period' }}</button>
       </div>
 
       @if (showForm()) {
@@ -44,14 +39,14 @@ let nextId = 1;
               type="text"
               required
               placeholder="e.g. Semester 1"
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
+              class="form-control mt-1 w-full"
             />
           </label>
           <label class="block text-sm font-medium text-slate-700">
             Type
             <select
               #typeSelect
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
+              class="form-control mt-1 w-full"
             >
               <option value="Semester">Semester</option>
               <option value="Quarter">Quarter</option>
@@ -62,10 +57,10 @@ let nextId = 1;
             Calendar
             <select
               #calendarSelect
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
+              class="form-control mt-1 w-full"
             >
-              @for (calendar of calendars; track calendar.id) {
-                <option [value]="calendar.id">{{ calendar.name }}</option>
+              @for (calendar of calendars(); track calendar.id) {
+                <option [value]="calendar.id">{{ calendar.schoolName }} · {{ calendar.type }}</option>
               }
             </select>
           </label>
@@ -75,7 +70,7 @@ let nextId = 1;
               #startInput
               type="date"
               required
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
+              class="form-control mt-1 w-full"
             />
           </label>
           <label class="block text-sm font-medium text-slate-700">
@@ -84,11 +79,11 @@ let nextId = 1;
               #endInput
               type="date"
               required
-              class="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-o-primary-500 focus-visible:ring-2 focus-visible:ring-o-primary-500 focus-visible:ring-offset-1"
+              class="form-control mt-1 w-full"
             />
           </label>
           <div class="lg:col-span-5">
-            <button pButton type="submit">Save Marking Period</button>
+            <button nz-button nzType="primary" type="submit">Save Marking Period</button>
           </div>
         </form>
       }
@@ -108,21 +103,21 @@ let nextId = 1;
   `
 })
 export class MarkingPeriodPageComponent {
-  private readonly repo = inject(SampleDataRepository);
-  private readonly messageService = inject(MessageService);
-  private readonly confirmationService = inject(ConfirmationService);
+  readonly shell = inject(ShellDataService);
+  private readonly toast = inject(ToastService);
+  private readonly confirmService = inject(ConfirmService);
 
-  readonly calendars = this.repo.calendars;
+  // Calendars a period can attach to: the scope's calendars that actually exist (not Missing placeholders).
+  readonly calendars = computed(() => this.shell.scopedCalendars().filter((c) => c.status !== 'Missing'));
   readonly showForm = signal(false);
 
-  private readonly periods = signal<IMarkingPeriod[]>(this.repo.markingPeriods);
-
-  readonly rows = computed<IMarkingPeriodRow[]>(() =>
-    this.periods().map((period) => ({
-      ...period,
-      calendarName: this.calendars.find((c) => c.id === period.calendarId)?.name ?? period.calendarId
-    }))
-  );
+  readonly rows = computed<IMarkingPeriodRow[]>(() => {
+    const byId = new Map(this.shell.scopedCalendars().map((c) => [c.id, c]));
+    return this.shell.markingPeriods().map((period) => {
+      const cal = byId.get(period.calendarId);
+      return { ...period, calendarName: cal ? `${cal.schoolName} · ${cal.type}` : period.calendarId };
+    });
+  });
 
   readonly defaultColDef: ColDef = { resizable: true, sortable: true, suppressMovable: true };
 
@@ -140,7 +135,7 @@ export class MarkingPeriodPageComponent {
       flex: 0,
       resizable: false,
       sortable: false,
-      cellRenderer: () => `<button type="button" class="p-button p-button-sm p-button-text p-button-danger" data-act="remove">Remove</button>`
+      cellRenderer: () => `<button type="button" class="ant-btn ant-btn-text ant-btn-sm ant-btn-dangerous" data-act="remove">Remove</button>`
     }
   ];
 
@@ -161,32 +156,30 @@ export class MarkingPeriodPageComponent {
 
     if (!name || !calendarId || !startDate || !endDate) return;
     if (startDate > endDate) {
-      this.messageService.add({ severity: 'error', summary: 'Invalid dates', detail: 'Start date must be before the end date.' });
+      this.toast.add({ severity: 'error', summary: 'Invalid dates', detail: 'Start date must be before the end date.' });
       return;
     }
 
     const period: IMarkingPeriod = { id: `mp-custom-${nextId++}`, calendarId, name, type, startDate, endDate };
-    this.periods.update((list) => [...list, period]);
+    this.shell.addMarkingPeriod(period);
     this.showForm.set(false);
     (event.target as HTMLFormElement).reset();
-    this.messageService.add({ severity: 'success', summary: 'Marking period added', detail: `${name} was added to the calendar.` });
+    this.toast.add({ severity: 'success', summary: 'Marking period added', detail: `${name} was added to the calendar.` });
   }
 
   onCellClicked(event: CellClickedEvent<IMarkingPeriodRow>): void {
     const target = event.event?.target as HTMLElement | undefined;
     if (target?.dataset['act'] === 'remove' && event.data) {
       const row = event.data;
-      this.confirmationService.confirm({
+      this.confirmService.confirm({
         header: 'Remove marking period?',
         message: `This removes "${row.name}" from ${row.calendarName}. This can't be undone.`,
         acceptLabel: 'Remove',
         rejectLabel: 'Cancel',
-        acceptIcon: 'pi pi-trash',
-        rejectIcon: 'pi pi-times',
-        acceptButtonStyleClass: 'p-button-danger',
+        danger: true,
         accept: () => {
-          this.periods.update((list) => list.filter((p) => p.id !== row.id));
-          this.messageService.add({ severity: 'success', summary: 'Marking period removed', detail: `${row.name} was removed.` });
+          this.shell.removeMarkingPeriod(row.id);
+          this.toast.add({ severity: 'success', summary: 'Marking period removed', detail: `${row.name} was removed.` });
         }
       });
     }

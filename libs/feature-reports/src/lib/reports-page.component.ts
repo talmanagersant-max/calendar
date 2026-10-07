@@ -1,10 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ColDef } from 'ag-grid-community';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { ToastModule } from 'primeng/toast';
-import { calendarLevel, IBellSchedule, IEarlyDismissalRow, IReportLeaRow, SampleDataRepository } from '@osse/shared/data-access';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { IBellSchedule, IEarlyDismissalRow, IReportLeaRow } from '@osse/shared/data-access';
+import { ShellDataService, ToastService } from '@osse/shared/ui';
 
 type ReportId = 'compliance-hours' | 'bell-times' | 'exceptions' | 'sites-missing';
 
@@ -25,18 +24,19 @@ interface ISiteMissingRow {
 @Component({
   selector: 'osse-reports-page',
   standalone: true,
-  imports: [AgGridAngular, ButtonModule, ToastModule],
-  providers: [MessageService],
+  imports: [AgGridAngular, NzButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <p-toast position="top-right" />
 
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
-        <h1 class="text-2xl font-semibold text-slate-900">Reports</h1>
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-900">Reports</h1>
+          <p class="mt-1 text-sm text-slate-500">{{ shell.scopeLabel() }} · {{ shell.year().label }}</p>
+        </div>
         <div class="flex items-center gap-2.5">
-          <button pButton type="button" [outlined]="true" severity="secondary" (click)="notify('Report scheduled')">Schedule Report</button>
-          <button pButton type="button" (click)="notify('Generate report dialog would open here')">+ Generate Report</button>
+          <button nz-button nzType="default" class="btn-secondary" type="button" (click)="notify('Report scheduled')">Schedule Report</button>
+          <button nz-button nzType="primary" type="button" (click)="notify('Generate report dialog would open here')">+ Generate Report</button>
         </div>
       </div>
 
@@ -71,8 +71,8 @@ interface ISiteMissingRow {
               <p class="text-xs text-slate-500">Generated {{ today }} · {{ rowCountFor(selectedReportId()) }} rows</p>
             </div>
             <div class="flex items-center gap-2.5">
-              <button pButton type="button" [outlined]="true" severity="secondary" size="small" (click)="notify('CSV exported')">Export CSV</button>
-              <button pButton type="button" [outlined]="true" severity="secondary" size="small" (click)="notify('PDF exported')">Export PDF</button>
+              <button nz-button nzType="default" class="btn-secondary" type="button" nzSize="small" (click)="notify('CSV exported')">Export CSV</button>
+              <button nz-button nzType="default" class="btn-secondary" type="button" nzSize="small" (click)="notify('PDF exported')">Export PDF</button>
             </div>
           </div>
 
@@ -96,13 +96,13 @@ interface ISiteMissingRow {
           <div class="mt-4">
             @switch (selectedReportId()) {
               @case ('compliance-hours') {
-                <ag-grid-angular class="ag-theme-alpine" style="width: 100%;" domLayout="autoHeight" [rowData]="hoursSummaryReport" [columnDefs]="hoursColumnDefs" [defaultColDef]="defaultColDef" />
+                <ag-grid-angular class="ag-theme-alpine" style="width: 100%;" domLayout="autoHeight" [rowData]="hoursSummaryReport()" [columnDefs]="hoursColumnDefs" [defaultColDef]="defaultColDef" />
               }
               @case ('bell-times') {
-                <ag-grid-angular class="ag-theme-alpine" style="width: 100%;" domLayout="autoHeight" [rowData]="bellSchedules" [columnDefs]="bellColumnDefs" [defaultColDef]="defaultColDef" />
+                <ag-grid-angular class="ag-theme-alpine" style="width: 100%;" domLayout="autoHeight" [rowData]="bellSchedules()" [columnDefs]="bellColumnDefs" [defaultColDef]="defaultColDef" />
               }
               @case ('exceptions') {
-                <ag-grid-angular class="ag-theme-alpine" style="width: 100%;" domLayout="autoHeight" [rowData]="earlyDismissalImpact" [columnDefs]="exceptionColumnDefs" [defaultColDef]="defaultColDef" />
+                <ag-grid-angular class="ag-theme-alpine" style="width: 100%;" domLayout="autoHeight" [rowData]="earlyDismissalImpact()" [columnDefs]="exceptionColumnDefs" [defaultColDef]="defaultColDef" />
               }
               @case ('sites-missing') {
                 <ag-grid-angular class="ag-theme-alpine" style="width: 100%;" domLayout="autoHeight" [rowData]="sitesMissingCalendar()" [columnDefs]="sitesMissingColumnDefs" [defaultColDef]="defaultColDef" />
@@ -115,8 +115,8 @@ interface ISiteMissingRow {
   `
 })
 export class ReportsPageComponent {
-  private readonly repo = inject(SampleDataRepository);
-  private readonly messageService = inject(MessageService);
+  readonly shell = inject(ShellDataService);
+  private readonly toast = inject(ToastService);
 
   readonly today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -130,35 +130,46 @@ export class ReportsPageComponent {
   readonly selectedReportId = signal<ReportId>('compliance-hours');
   readonly selectedReport = computed(() => this.reportDefinitions.find((r) => r.id === this.selectedReportId()) ?? this.reportDefinitions[0]);
 
-  readonly hoursSummaryReport = this.repo.hoursSummaryReport;
-  readonly bellSchedules = this.repo.bellSchedules;
-  readonly earlyDismissalImpact = this.repo.earlyDismissalImpact;
-
-  // Real derived report: any Site with no calendar record at all for the active school year,
-  // joined via the real leaId/siteId fields (not by name matching). A non-reportable satellite
-  // site doesn't automatically need its own Regular calendar - it's only flagged here if it
-  // carries real enrollment, matching the reportable-vs-non-reportable business rule rather than
-  // treating every physical site as equally required to have one.
-  readonly sitesMissingCalendar = computed<ISiteMissingRow[]>(() => {
-    // A Grade Level Calendar narrows one grade band at a site - it doesn't satisfy the site's
-    // own Regular/Site Level calendar requirement, so only Site Level records count here.
-    const sitesWithCalendars = new Set(
-      this.repo.calendars.filter((c) => calendarLevel(c) === 'Site' && c.siteId).map((c) => c.siteId as string)
-    );
-    return this.repo.schoolList
-      .filter((school) => !sitesWithCalendars.has(school.id))
-      .filter((school) => school.reportable !== false || school.studentCount > 0)
-      .map((school) => ({
-        site: school.name,
-        leaName: this.repo.leaList.find((l) => l.id === school.leaId)?.name ?? school.leaId,
-        gradeBand: school.gradeBand,
-        status: 'No calendar submitted',
-        reason: school.reportable === false ? `Non-reportable, but has ${school.studentCount} enrolled student(s)` : 'Reportable site - Regular calendar required'
-      }));
+  // One row per school in scope: instructional-hour spread across its built site calendars.
+  readonly hoursSummaryReport = computed<IReportLeaRow[]>(() => {
+    const calendars = this.shell.siteCalendars().filter((c) => c.hours !== null && !c.type.startsWith('ESY'));
+    return this.shell.schoolsInScope()
+      .map((school) => {
+        const hours = calendars.filter((c) => c.schoolId === school.id).map((c) => c.hours as number);
+        if (!hours.length) return null;
+        return {
+          lea: school.name,
+          schools: school.sites.length,
+          avgHours: Math.round(hours.reduce((a, b) => a + b, 0) / hours.length),
+          minHours: Math.min(...hours),
+          maxHours: Math.max(...hours),
+          compliant: hours.every((h) => h >= 1080) ? ('All Compliant' as const) : ('Partial' as const)
+        };
+      })
+      .filter((row): row is IReportLeaRow => row !== null);
   });
+  readonly bellSchedules = this.shell.bellSchedules;
+  readonly earlyDismissalImpact = this.shell.earlyDismissalImpact;
+
+  // Sites in scope whose calendar for the selected year is still missing (or only a draft).
+  readonly sitesMissingCalendar = computed<ISiteMissingRow[]>(() =>
+    this.shell
+      .siteCalendars()
+      .filter((c) => (c.status === 'Missing' || c.status === 'Draft') && !c.type.startsWith('ESY') && c.type !== '12-Month')
+      .map((c) => {
+        const match = this.shell.findSite(c.siteId);
+        return {
+          site: c.schoolName,
+          leaName: c.leaName,
+          gradeBand: match?.school.gradeBand ?? '—',
+          status: c.status === 'Draft' ? 'Draft not submitted' : 'No calendar submitted',
+          reason: `Regular ${c.type} calendar required - due ${this.shell.dueDate()}`
+        };
+      })
+  );
 
   readonly complianceStats = computed(() => {
-    const rows = this.hoursSummaryReport;
+    const rows = this.hoursSummaryReport();
     const avg = Math.round(rows.reduce((sum, r) => sum + r.avgHours, 0) / (rows.length || 1));
     const compliant = rows.filter((r) => r.compliant === 'All Compliant').length;
     return { avg, compliant, nonCompliant: rows.length - compliant };
@@ -169,12 +180,12 @@ export class ReportsPageComponent {
   readonly hoursColumnDefs: ColDef<IReportLeaRow>[] = [
     {
       field: 'lea',
-      headerName: 'LEA',
+      headerName: 'School',
       flex: 1.3,
       minWidth: 160,
       cellRenderer: (params: { value: string }) => `<span class="cursor-pointer font-semibold text-o-accent-600 hover:underline">${params.value}</span>`
     },
-    { field: 'schools', headerName: 'Schools', flex: 0.8, minWidth: 90, cellClass: 'font-mono' },
+    { field: 'schools', headerName: 'Sites', flex: 0.8, minWidth: 90, cellClass: 'font-mono' },
     {
       field: 'avgHours',
       headerName: 'Avg Hours',
@@ -236,17 +247,17 @@ export class ReportsPageComponent {
   rowCountFor(id: ReportId): number {
     switch (id) {
       case 'compliance-hours':
-        return this.hoursSummaryReport.length;
+        return this.hoursSummaryReport().length;
       case 'bell-times':
-        return this.bellSchedules.length;
+        return this.bellSchedules().length;
       case 'exceptions':
-        return this.earlyDismissalImpact.length;
+        return this.earlyDismissalImpact().length;
       case 'sites-missing':
         return this.sitesMissingCalendar().length;
     }
   }
 
   notify(message: string): void {
-    this.messageService.add({ severity: 'info', summary: message, detail: '' });
+    this.toast.add({ severity: 'info', summary: message, detail: '' });
   }
 }
